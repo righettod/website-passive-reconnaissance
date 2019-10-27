@@ -1,3 +1,6 @@
+[![Requirements Status](https://requires.io/github/righettod/website-passive-reconnaissance/requirements.svg?branch=master)](https://requires.io/github/righettod/website-passive-reconnaissance/requirements/?branch=master) [![Known Vulnerabilities](https://snyk.io/test/github/righettod/website-passive-reconnaissance/badge.svg?targetFile=requirements.txt)](https://snyk.io/test/github/righettod/website-passive-reconnaissance?targetFile=requirements.txt)
+
+
 # Objectives
 
 Script to automate, when possible, the **passive reconnaissance** performed a website prior to an assessment (no direct hit on the target).
