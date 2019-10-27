@@ -1,0 +1,5 @@
+requests==2.22.0
+termcolor==1.1.0
+shodan==1.19.0
+colorama==0.4.1
+dnspython==1.16.0
