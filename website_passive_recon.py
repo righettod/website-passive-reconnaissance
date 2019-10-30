@@ -17,6 +17,7 @@ import dns.resolver
 import requests
 import shodan
 import time
+import datetime
 from termcolor import colored
 from dns.resolver import NoAnswer
 
@@ -91,73 +92,105 @@ def get_shodan_ip_infos(ip, api_key):
     infos.append(f"ISP = {value}")
     value = data["org"]
     infos.append(f"Organization = {value}")
-    value = data["hostnames"]
+    value = " , ".join(data["hostnames"])
     infos.append(f"Hostnames = {value}")
     value = data["ports"]
     infos.append(f"Ports = {value}")
     return infos
 
 
+def get_qualys_sslscan_cached_infos(domain):
+    infos = []
+    service_url = f"https://api.ssllabs.com/api/v3/analyze?host={domain}&publish=off&startNew=off&fromCache=on&maxAge=8760&ignoreMismatch=off&all=done"
+    response = requests.get(service_url, headers={"User-Agent": f"User-Agent: {USER_AGENT}"})
+    data = response.json()
+    if "endpoints" in data and "testTime" in data:
+        value = datetime.datetime.fromtimestamp(data["testTime"]/1000.0).strftime("%Y-%d-%mT%H:%M:%S")
+        infos.append(f"Test time = {value}")   
+        for endpoint in data["endpoints"]:
+            if endpoint["statusMessage"] != "Ready":
+                continue
+            endpoint_identifier = endpoint["ipAddress"] + " (" + endpoint["serverName"] + ")"
+            value = endpoint["grade"]
+            infos.append(f"[{endpoint_identifier}] - Grade = {value}")     
+            value = endpoint["details"]["vulnBeast"]
+            infos.append(f"[{endpoint_identifier}] - Exposed to BEAST = {value}")      
+            value = endpoint["details"]["heartbleed"]
+            infos.append(f"[{endpoint_identifier}] - Exposed to HEARTBLEED = {value}")             
+            value = endpoint["details"]["poodle"]       
+            infos.append(f"[{endpoint_identifier}] - Exposed to POODLE = {value}")           
+            value = endpoint["details"]["freak"]        
+            infos.append(f"[{endpoint_identifier}] - Exposed to FREAK = {value}")                 
+            value = endpoint["details"]["logjam"]        
+            infos.append(f"[{endpoint_identifier}] - Exposed to LOGJAM = {value}")  
+            value = endpoint["details"]["drownVulnerable"]        
+            infos.append(f"[{endpoint_identifier}] - Exposed to DROWN = {value}")  
+    return infos                        
+
+
 if __name__ == "__main__":
     colorama.init()
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", action="store", dest="domain_name",
-                        help="Domain to analyse (ex: www.righettod.eu).", required=True)
-    parser.add_argument("-a", action="store", dest="api_key_file", default=None,
-                        help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
-    parser.add_argument("-n", action="store", dest="name_server", default=None,
-                        help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
+    parser.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: www.righettod.eu).", required=True)
+    parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
+    parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
     args = parser.parse_args()
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
-    print(colored(f"***********************", "yellow", attrs=['bold']))
-    print(colored(f"* {args.domain_name.upper()}", "yellow", attrs=['bold']))
-    print(colored(f"***********************", "yellow", attrs=['bold']))
+    print(colored(f"##############################################", "green", attrs=["bold"]))
+    print(colored(f"### TARGET: {args.domain_name.upper()}", "green", attrs=["bold"]))
+    print(colored(f"##############################################", "green", attrs=["bold"]))
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)
-        print(colored(f"[CONF] API key file '{args.api_key_file}' loaded.", "blue", attrs=['bold']))
+        print(colored(f"[CONF] API key file '{args.api_key_file}' loaded.", "green", attrs=["bold"]))
     if args.name_server is not None:
-        print(colored(f"[CONF] Name server {args.name_server} used for all DNS query.", "blue", attrs=['bold']))
+        print(colored(f"[CONF] Name server {args.name_server} used for all DNS query.", "green", attrs=["bold"]))
     else:
-        print(colored(f"[CONF] System default name server used for all DNS query.", "blue", attrs=['bold']))
-    print(colored(f"[DNS] Extract the IP V4/V6 addresses...","blue", attrs=['bold']))
+        print(colored(f"[CONF] System default name server used for all DNS query.", "green", attrs=["bold"]))
+    print(colored(f"[DNS] Extract the IP V4/V6 addresses...","blue", attrs=["bold"]))
     ips = get_ip_addresses(args.domain_name, args.name_server, ["A", "AAAA"])
     print_infos(ips)
-    print(colored(f"[DNS] Extract the aliases...", "blue", attrs=['bold']))
+    print(colored(f"[DNS] Extract the aliases...", "blue", attrs=["bold"]))
     cnames = get_cnames(args.domain_name, args.name_server)
     print_infos(cnames)
-    print(colored(f"[RIPE] Extract the owner information of the IP addresses...", "blue", attrs=['bold']))
+    print(colored(f"[RIPE] Extract the owner information of the IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
-        print(f"{ip}")
-        infos = get_ip_owner(ip)
-        print_infos(infos, "  ")
-    print(colored(f"[SHODAN] Extract the information of the IP addresses and domain...", "blue", attrs=['bold']))
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))
+        informations = get_ip_owner(ip)
+        print_infos(informations, "  ")
+    print(colored(f"[SHODAN] Extract the information of the IP addresses and domain...", "blue", attrs=["bold"]))
     if "shodan" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["shodan"]
-        print(f"{args.domain_name}")
+        print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
         print("  Search with filter using the API with a free tier API key is not allowed, so, use the following URL from a browser:")
         print(f"  https://www.shodan.io/search?query=hostname%3A{args.domain_name}")
         is_single_ip = len(ips) < 2
         for ip in ips:
-            print(f"{ip}")
-            infos = get_shodan_ip_infos(ip, api_key)
-            print_infos(infos, "  ")
+            print(colored(f"{ip}", "yellow", attrs=["bold"]))
+            informations = get_shodan_ip_infos(ip, api_key)
+            print_infos(informations, "  ")
             # Add tempo due to API limitation (API methods are rate-limited to 1 request/ second)
             if not is_single_ip:
                 time.sleep(1)
     else:
-        print(colored(f"Skipped because no API key file was specified!","red", attrs=['bold']))
-    print(colored(f"[HACKERTARGET] Extract hosts shared by each IP address...", "blue", attrs=['bold']))
+        print(colored(f"Skipped because no API key file was specified!","red", attrs=["bold"]))
+    print(colored(f"[HACKERTARGET] Extract hosts shared by each IP address...", "blue", attrs=["bold"]))
     for ip in ips:
-        print(f"{ip}")
-        infos = get_shared_hosts(ip)
-        print_infos(infos, "  ")
-    print(colored(f"[NETCRAFT] Provide the URL to report for the domain and IP addresses...", "blue", attrs=['bold']))
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))
+        informations = get_shared_hosts(ip)
+        print_infos(informations, "  ")
+    print(colored(f"[NETCRAFT] Provide the URL to report for the domain and IP addresses...", "blue", attrs=["bold"]))
     print("No API provided and browser required, so, use the following URL from a browser:")
     print(f"  https://toolbar.netcraft.com/site_report?url={args.domain_name}")
     for ip in ips:
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
-    print(colored(f"[GOOGLE] Provide the URL for dork for the domain...", "blue", attrs=['bold']))
+    print(colored(f"[GOOGLE] Provide the URL for dork for the domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
     print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}",)
-    print(colored(f"Done.", "green", attrs=['bold']))
+    print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain...", "blue", attrs=["bold"]))
+    informations = get_qualys_sslscan_cached_infos(args.domain_name)
+    if len(informations) == 0:
+        print(colored(f"Domain was not present in the cached scan!","red", attrs=["bold"]))
+    else:
+        print_infos(informations, "")
+    print(colored(f"[DONE]", "green", attrs=["bold"]))
