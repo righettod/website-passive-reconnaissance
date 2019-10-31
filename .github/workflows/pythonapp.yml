@@ -21,3 +21,6 @@ jobs:
     - name: Try an execution
       run: |        
         python website_passive_recon.py -d righettod.eu -n 8.8.8.8
+        python website_passive_recon.py -d www.excellium-services.com
+        python website_passive_recon.py -d mail.google.com
+        python website_passive_recon.py -d microsoft.com
