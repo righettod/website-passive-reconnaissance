@@ -99,32 +99,46 @@ def get_shodan_ip_infos(ip, api_key):
     return infos
 
 
-def get_qualys_sslscan_cached_infos(domain):
+def get_qualys_sslscan_cached_infos(domain, ip):
     infos = []
-    service_url = f"https://api.ssllabs.com/api/v3/analyze?host={domain}&publish=off&startNew=off&fromCache=on&maxAge=8760&ignoreMismatch=off&all=done"
+    service_url = f"https://api.ssllabs.com/api/v3/getEndpointData?host={domain}&s={ip}&fromCache=on"
     response = requests.get(service_url, headers={"User-Agent": f"User-Agent: {USER_AGENT}"})
     data = response.json()
-    if "endpoints" in data and "testTime" in data:
-        value = datetime.datetime.fromtimestamp(data["testTime"]/1000.0).strftime("%Y-%d-%mT%H:%M:%S")
-        infos.append(f"Test time = {value}")   
-        for endpoint in data["endpoints"]:
-            if endpoint["statusMessage"] != "Ready":
-                continue
-            endpoint_identifier = endpoint["ipAddress"] + " (" + endpoint["serverName"] + ")"
-            value = endpoint["grade"]
-            infos.append(f"[{endpoint_identifier}] - Grade = {value}")     
-            value = endpoint["details"]["vulnBeast"]
-            infos.append(f"[{endpoint_identifier}] - Exposed to BEAST = {value}")      
-            value = endpoint["details"]["heartbleed"]
-            infos.append(f"[{endpoint_identifier}] - Exposed to HEARTBLEED = {value}")             
-            value = endpoint["details"]["poodle"]       
-            infos.append(f"[{endpoint_identifier}] - Exposed to POODLE = {value}")           
-            value = endpoint["details"]["freak"]        
-            infos.append(f"[{endpoint_identifier}] - Exposed to FREAK = {value}")                 
-            value = endpoint["details"]["logjam"]        
-            infos.append(f"[{endpoint_identifier}] - Exposed to LOGJAM = {value}")  
-            value = endpoint["details"]["drownVulnerable"]        
-            infos.append(f"[{endpoint_identifier}] - Exposed to DROWN = {value}")  
+    if "errors" in data:
+        error_msg = ""
+        for error in data["errors"]:
+            error_msg += error["message"]
+        infos.append(f"Error = {error_msg}")   
+    if "statusMessage" in data and data["statusMessage"] == "Ready":
+        if "ipAddress" in data:
+            value = data["ipAddress"]
+            infos.append(f"IPAddress = {value}")   
+        if "serverName" in data:
+            value = data["serverName"]
+            infos.append(f"ServerName = {value}")   
+        if "grade" in data:
+            value = data["grade"]
+            infos.append(f"Grade = {value}")   
+        if "details" in data:
+            details = data["details"]
+            value = datetime.datetime.fromtimestamp(details["hostStartTime"]/1000.0).strftime("%Y-%d-%mT%H:%M:%S")
+            infos.append(f"AssessmentStartingTime = {value}")                           
+            value = details["vulnBeast"]
+            infos.append(f"BEAST = {value}")      
+            value = details["heartbleed"]
+            infos.append(f"HEARTBLEED = {value}")             
+            value = details["poodle"]       
+            infos.append(f"POODLE = {value}")           
+            value = details["freak"]        
+            infos.append(f"FREAK = {value}")                 
+            value = details["logjam"]        
+            infos.append(f"LOGJAM = {value}")  
+            value = details["drownVulnerable"]        
+            infos.append(f"DROWN = {value}")          
+            value = (details["ticketbleed"] == 2)
+            infos.append(f"TICKETBLEED = {value}")           
+            value = (details["bleichenbacher"] == 2 or details["bleichenbacher"] == 3)
+            infos.append(f"ROBOT = {value}")           
     return infos                        
 
 
@@ -140,6 +154,7 @@ if __name__ == "__main__":
     print(colored(f"##############################################", "green", attrs=["bold"]))
     print(colored(f"### TARGET: {args.domain_name.upper()}", "green", attrs=["bold"]))
     print(colored(f"##############################################", "green", attrs=["bold"]))
+    print(colored(f".::Starting reconnaissance::.", "white", attrs=["bold"]))
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)
         print(colored(f"[CONF] API key file '{args.api_key_file}' loaded.", "green", attrs=["bold"]))
@@ -187,10 +202,9 @@ if __name__ == "__main__":
     print(colored(f"[GOOGLE] Provide the URL for dork for the domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
     print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}",)
-    print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain...", "blue", attrs=["bold"]))
-    informations = get_qualys_sslscan_cached_infos(args.domain_name)
-    if len(informations) == 0:
-        print(colored(f"Domain was not present in the cached scan!","red", attrs=["bold"]))
-    else:
-        print_infos(informations, "")
-    print(colored(f"[DONE]", "green", attrs=["bold"]))
+    print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
+    for ip in ips:
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))
+        informations = get_qualys_sslscan_cached_infos(args.domain_name, ip)
+        print_infos(informations, "  ")
+    print(colored(f".::Reconnaissance finished::.", "white", attrs=["bold"]))
