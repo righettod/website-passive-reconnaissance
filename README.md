@@ -5,7 +5,7 @@
 
 Script to automate, when possible, the **passive reconnaissance** performed on a website prior to an assessment (no direct hit on the target).
 
-Also used to guide my reconnaissance phase by defining all steps (manual or automated) that must be mandatory performed.
+Also used to guide a reconnaissance phase by defining all steps (manual or automated) that must be mandatory performed.
 
 # Requirements
 
