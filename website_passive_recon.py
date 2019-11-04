@@ -20,6 +20,8 @@ import time
 import datetime
 from termcolor import colored
 from dns.resolver import NoAnswer
+from dns.resolver import NoNameservers
+from dns.resolver import NXDOMAIN
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0"
 
@@ -39,6 +41,10 @@ def get_ip_addresses(domain, name_server, record_types):
             for data in answer:
                 ips.append(data.to_text())
         except NoAnswer:
+            pass
+        except NoNameservers:
+            pass
+        except NXDOMAIN:
             pass
     return ips
 
@@ -164,6 +170,9 @@ if __name__ == "__main__":
         print(colored(f"[CONF] System default name server used for all DNS query.", "green", attrs=["bold"]))
     print(colored(f"[DNS] Extract the IP V4/V6 addresses...","blue", attrs=["bold"]))
     ips = get_ip_addresses(args.domain_name, args.name_server, ["A", "AAAA"])
+    if not ips:
+        print(colored(f".::Unable to resolve DNS.Reconnaissance finished::.", "red", attrs=["bold"]))
+        exit();
     print_infos(ips)
     print(colored(f"[DNS] Extract the aliases...", "blue", attrs=["bold"]))
     cnames = get_cnames(args.domain_name, args.name_server)
