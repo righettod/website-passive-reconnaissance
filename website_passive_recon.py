@@ -3,9 +3,6 @@
 Script to automate, when possible, the passive reconnaissance performed a website prior to an assessment.
 Also used to guide the reconnaissance phase by defining all steps (manual or automated).
 
-Dependencies:
-pip install colorama dnspython shodan requests
-
 API Key INI file example (ex: api_key.ini):
 [API_KEYS]
 shodan = xxx    
