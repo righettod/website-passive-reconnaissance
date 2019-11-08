@@ -25,7 +25,10 @@ API keys are expected to be provided within an INI file having the followign str
 
 ```ini
 [API_KEYS]
-shodan = xxx
+;See https://www.shodan.io/
+shodan = xxx  
+;See https://www.hybrid-analysis.com
+hybrid-analysis = xxx  
 ```
 
 # Usage examples
