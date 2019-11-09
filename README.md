@@ -42,10 +42,14 @@ usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_S
 
 optional arguments:
   -h, --help       show this help message and exit
-  -d DOMAIN_NAME   Domain to analyse (ex: excellium.lu).
-  -a API_KEY_FILE  Configuration INI file with all API keys (ex: conf.ini).
-  -n NAME_SERVER   Name server to use for the DNS query (ex: 8.8.8.8).
-  -p HTTP_PROXY    HTTP proxy to use for all HTTP call to differents services (ex: http://5.196.132.126:3128).
+  -d DOMAIN_NAME   Domain to analyse.
+                   Ex: excellium.lu
+  -a API_KEY_FILE  Configuration INI file with all API keys.
+                   Ex: conf.ini
+  -n NAME_SERVER   Name server to use for the DNS query.
+                   Ex: 8.8.8.8
+  -p HTTP_PROXY    HTTP proxy to use for all HTTP call to differents services.
+                   Ex: http://5.196.132.126:3128
 
 $ python website_passive_recon.py -d excellium.lu
 ...
