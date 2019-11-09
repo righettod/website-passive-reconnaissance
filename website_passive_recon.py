@@ -6,7 +6,7 @@ Also used to guide the reconnaissance phase by defining all steps (manual or aut
 API Key INI file example (ex: api_key.ini):
 [API_KEYS]
 ;See https://www.shodan.io/
-shodan = xxx  
+shodan=xxx  
 ;See https://www.hybrid-analysis.com
 hybrid-analysis = xxx  
 """
@@ -15,16 +15,41 @@ import argparse
 import configparser
 import dns.resolver
 import requests
-import shodan
 import time
+import sys
 import datetime
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
 from dns.resolver import NXDOMAIN
-from shodan.exception import APIError
+from requests.exceptions import ProxyError
+
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0"
+
+
+def configure_proxy(http_proxy):
+    web_proxies = {}
+    if http_proxy is not None:
+        web_proxies["http"] = http_proxy
+        web_proxies["https"] = http_proxy
+    return web_proxies    
+
+
+def test_proxy_connectivity(http_proxy):
+    msg = ""
+    try:
+        web_proxies = {"http": http_proxy, "https": http_proxy}
+        service_url = "https://perdu.com/"
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=20)
+        if response.status_code == 200:
+            msg = "Succeed"
+        else:
+            msg = f"Failed (HTTP response code = {response.status_code})"
+    except ProxyError as e:
+        msg = f"Failed ({str(e)})"
+    return msg
+
 
 def print_infos(info_list, prefix=""):
     for info in info_list:
@@ -64,11 +89,15 @@ def get_cnames(domain, name_server):
     return cnames
 
 
-def get_active_shared_hosts(ip):
+def get_active_shared_hosts(ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
     infos = []
     # HackerTaget API (limited of 50 queries per day)
     service_url = f"https://api.hackertarget.com/reverseiplookup/?q={ip}"
-    response = requests.get(service_url, headers={"User-Agent": USER_AGENT})
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos
     vhosts = response.text
     for vhost in vhosts.splitlines():
         if vhost != ip:
@@ -76,11 +105,15 @@ def get_active_shared_hosts(ip):
     return infos
 
 
-def get_passive_shared_hosts(ip):
+def get_passive_shared_hosts(ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
     infos = []
     # ThreatMiner API (https://www.threatminer.org/api.php)
     service_url = f"https://api.threatminer.org/v2/host.php?q={ip}&rt=2"
-    response = requests.get(service_url, headers={"User-Agent": USER_AGENT})
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
     results = response.json() 
     if results["status_code"] == "200":
         for result in results["results"]:
@@ -90,49 +123,67 @@ def get_passive_shared_hosts(ip):
     return infos    
 
 
-def get_ip_owner(ip):
+def get_ip_owner(ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
     infos = []
-    # https://apps.db.ripe.net/db-web-ui/#/query
-    service_url = f"https://rest.db.ripe.net/search.json?query-string={ip}&flags=no-referenced&flags=no-irt&source=RIPE"
-    response = requests.get(service_url, headers={"User-Agent": USER_AGENT})
-    data = response.json()
-    properties = data["objects"]["object"][0]["attributes"]["attribute"]
-    for property in properties:
-        if "name" in property:
-            name = property["name"]
-            if name == "remarks":
-                continue
-            value = property["value"]
-            infos.append(f"{name} = {value}")
+    service_url = "https://hackertarget.com/whois-lookup/"
+    post_data = {"theinput" : ip, "thetest": "whois", "name_of_nonce_field" : "ec52b6fbb9", "_wp_http_referer": "%2Fwhois-lookup%2F"}
+    response = requests.post(service_url, data=post_data, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    html = response.text
+    marker = "<pre id=\"formResponse\">"
+    html = html[html.index(marker)+len(marker):]
+    marker = "</pre>"
+    data = html[:html.index(marker)]
+    records = data.splitlines()
+    records_skip_prefix = ["Ref:", "OrgTech", "OrgAbuse", "OrgNOC", "tech-c", "admin-c", "remarks", "e-mail", "abuse", "Comment", "#", "%"]
+    for record in records:
+        if len(record.strip()) == 0:
+            continue
+        skip_it = False
+        for prefix in records_skip_prefix:
+            if record.startswith(prefix):
+                skip_it = True
+                break
+        if not skip_it:
+            infos.append(record)    
     return infos
 
 
-def get_shodan_ip_infos(ip, api_key):
+def get_shodan_ip_infos(ip, api_key, http_proxy):
+    web_proxies = configure_proxy(http_proxy)         
     infos = []
-    try:
-        # https://developer.shodan.io/api
-        api = shodan.Shodan(api_key)
-        data = api.host(ip, minify=True)
-        value = data["last_update"]
-        infos.append(f"Last update = {value}")
-        value = data["isp"]
-        infos.append(f"ISP = {value}")
-        value = data["org"]
-        infos.append(f"Organization = {value}")
-        value = " , ".join(data["hostnames"])
-        infos.append(f"Hostnames = {value}")
-        value = data["ports"]
-        infos.append(f"Ports = {value}")
-    except APIError as e:
-        infos.append(f"{str(e)}")
+    # https://developer.shodan.io/api
+    service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&minify=true"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    data = response.json() 
+    value = data["last_update"]
+    infos.append(f"Last update = {value}")
+    value = data["isp"]
+    infos.append(f"ISP = {value}")
+    value = data["org"]
+    infos.append(f"Organization = {value}")
+    value = " , ".join(data["hostnames"])
+    infos.append(f"Hostnames = {value}")
+    value = data["ports"]
+    infos.append(f"Ports = {value}")
     return infos
 
 
-def get_qualys_sslscan_cached_infos(domain, ip):
+def get_qualys_sslscan_cached_infos(domain, ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)               
     infos = []
     # Qualys SSL (https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md)
     service_url = f"https://api.ssllabs.com/api/v3/getEndpointData?host={domain}&s={ip}&fromCache=on"
-    response = requests.get(service_url, headers={"User-Agent": USER_AGENT})
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
     data = response.json()
     if "errors" in data:
         error_msg = ""
@@ -172,11 +223,15 @@ def get_qualys_sslscan_cached_infos(domain, ip):
     return infos  
 
 
-def get_hybrid_analysis_report_infos(query, api_key):
+def get_hybrid_analysis_report_infos(query, api_key, http_proxy):
+    web_proxies = configure_proxy(http_proxy)              
     infos = []
     # https://www.hybrid-analysis.com/docs/api/v2
     service_url = f"https://www.hybrid-analysis.com/api/search?query={query}"
-    response = requests.get(service_url, headers={"User-Agent": "Falcon", "api-key": api_key})
+    response = requests.get(service_url, headers={"User-Agent": "Falcon", "api-key": api_key}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
     data = response.json()
     rc = data["response_code"] 
     if rc == 0 :
@@ -192,38 +247,55 @@ def get_hybrid_analysis_report_infos(query, api_key):
 
 
 if __name__ == "__main__":
+    requests.packages.urllib3.disable_warnings()
     colorama.init()
     start_time = time.time()
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: www.righettod.eu).", required=True)
     parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
     parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
+    parser.add_argument("-p", action="store", dest="http_proxy", default=None, help="HTTP proxy to use for all HTTP call to differents services (ex: http://88.198.50.103:9080).", required=False)
     args = parser.parse_args()
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
-    print(colored(f"##############################################", "green", attrs=["bold"]))
-    print(colored(f"### TARGET: {args.domain_name.upper()}", "green", attrs=["bold"]))
-    print(colored(f"##############################################", "green", attrs=["bold"]))
+    http_proxy_to_use = args.http_proxy
+    print(colored(f"##############################################", "white", attrs=["bold"]))
+    print(colored(f"### TARGET: {args.domain_name.upper()}", "white", attrs=["bold"]))
+    print(colored(f"##############################################", "white", attrs=["bold"]))
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)
-        print(colored(f"[CONF] API key file '{args.api_key_file}' loaded.", "green", attrs=["bold"]))
+        print(colored(f"[CONF] API key file '{args.api_key_file}' loaded.", "white", attrs=[]))
     if args.name_server is not None:
-        print(colored(f"[CONF] Name server {args.name_server} used for all DNS query.", "green", attrs=["bold"]))
+        print(colored(f"[CONF] Name server '{args.name_server}' used for all DNS queries.", "white", attrs=[]))
     else:
-        print(colored(f"[CONF] System default name server used for all DNS query.", "green", attrs=["bold"]))
+        print(colored(f"[CONF] System default name server used for all DNS queries.", "white", attrs=[]))
+    if http_proxy_to_use is not None:
+        print(colored(f"[CONF] HTTP proxy '{http_proxy_to_use}' used for all HTTP requests.", "white", attrs=[]))
+        if args.api_key_file is not None:
+            print(colored(f"[WARNING] Be aware that your API keys will be visible by the specified proxy!", "yellow", attrs=["bold"]))
+        print("Test proxy connectivity...", end='')
+        msg = test_proxy_connectivity(http_proxy_to_use)
+        if msg.startswith("Succeed"):
+            print(colored(msg, "green", attrs=[]))
+        else:
+            print(colored(msg, "red", attrs=[]))
+            print(colored(f".::Reconnaissance aborted::.", "red", attrs=["bold"]))
+            sys.exit(1)            
+    else:
+        print(colored(f"[CONF] No HTTP proxy used for all HTTP requests.", "blue", attrs=["bold"]))
     print(colored(f"[DNS] Extract the IP V4/V6 addresses...","blue", attrs=["bold"]))
     ips = get_ip_addresses(args.domain_name, args.name_server, ["A", "AAAA"])
     if not ips:
-        print(colored(f".::Unable to resolve DNS.Reconnaissance finished::.", "red", attrs=["bold"]))
-        exit();
+        print(colored(f".::Unable to resolve DNS - Reconnaissance aborted::.", "red", attrs=["bold"]))
+        sys.exit(2)
     print_infos(ips)
     print(colored(f"[DNS] Extract the aliases...", "blue", attrs=["bold"]))
     cnames = get_cnames(args.domain_name, args.name_server)
     print_infos(cnames)
-    print(colored(f"[RIPE] Extract the owner information of the IP addresses...", "blue", attrs=["bold"]))
+    print(colored(f"[WHOIS] Extract the owner information of the IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_ip_owner(ip)
+        informations = get_ip_owner(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[SHODAN] Extract the information of the IP addresses and domain...", "blue", attrs=["bold"]))
     if "shodan" in api_key_config["API_KEYS"]:
@@ -234,7 +306,7 @@ if __name__ == "__main__":
         is_single_ip = len(ips) < 2
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
-            informations = get_shodan_ip_infos(ip, api_key)
+            informations = get_shodan_ip_infos(ip, api_key, http_proxy_to_use)
             print_infos(informations, "  ")
             # Add tempo due to API limitation (API methods are rate-limited to 1 request/ second)
             if not is_single_ip:
@@ -244,12 +316,12 @@ if __name__ == "__main__":
     print(colored(f"[HACKERTARGET] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_active_shared_hosts(ip)
+        informations = get_active_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[THREATMINER] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_passive_shared_hosts(ip)
+        informations = get_passive_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[NETCRAFT] Provide the URL to report for the domain and IP addresses...", "blue", attrs=["bold"]))
     print("No API provided and browser required, so, use the following URL from a browser:")
@@ -262,19 +334,19 @@ if __name__ == "__main__":
     print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_qualys_sslscan_cached_infos(args.domain_name, ip)
+        informations = get_qualys_sslscan_cached_infos(args.domain_name, ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[HYBRID-ANALYSIS] Extract the verdict for the IP addresses and domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "hybrid-analysis" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["hybrid-analysis"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-        informations = get_hybrid_analysis_report_infos(f"domain:{args.domain_name}", api_key)
+        informations = get_hybrid_analysis_report_infos(f"domain:{args.domain_name}", api_key, http_proxy_to_use)
         print_infos(informations, "  ")
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))   
-            informations = get_hybrid_analysis_report_infos(f"host:%22{ip}%22", api_key)
+            informations = get_hybrid_analysis_report_infos(f"host:%22{ip}%22", api_key, http_proxy_to_use)
             print_infos(informations, "  ")
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))     
     delay = round(time.time() - start_time, 2)           
-    print(colored(f"[\u2714] Reconnaissance finished in {delay} seconds.", "white", attrs=["bold"]))
+    print(colored(f".::Reconnaissance finished in {delay} seconds::.", "white", attrs=["bold"]))
