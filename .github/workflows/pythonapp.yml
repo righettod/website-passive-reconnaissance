@@ -9,7 +9,7 @@ jobs:
     name: Test with Python ${{ matrix.python-version }}
     steps:
     - uses: actions/checkout@v1
-    - name: Set up Python 3.7
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
@@ -21,6 +21,3 @@ jobs:
     - name: Try an execution
       run: |        
         python website_passive_recon.py -d righettod.eu -n 8.8.8.8
-        python website_passive_recon.py -d www.excellium-services.com
-        python website_passive_recon.py -d mail.google.com
-        python website_passive_recon.py -d microsoft.com
