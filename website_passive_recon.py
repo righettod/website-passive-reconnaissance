@@ -266,6 +266,23 @@ def get_hybrid_analysis_report_infos(query, api_key, http_proxy):
     return infos
 
 
+def get_certificate_transparency_log_subdomains(domain, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
+    infos = []
+    # ThreatMiner API (https://www.threatminer.org/api.php)
+    service_url = f"https://crt.sh/?q=%.{domain}&output=json"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    results = response.json() 
+    for entry in results:
+        cert_name = f"{entry['name_value']} ({entry['issuer_name']})"
+        if cert_name not in infos:
+            infos.append(cert_name)
+    return infos      
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -375,5 +392,9 @@ if __name__ == "__main__":
             print_infos(informations, "  ")
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))     
-    delay = round(time.time() - start_time, 2)           
+    print(colored(f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain...", "blue", attrs=["bold"]))     
+    informations = get_certificate_transparency_log_subdomains(args.domain_name, http_proxy_to_use)
+    print_infos(informations, "  ")
+    delay = round(time.time() - start_time, 2)      
+    print("")     
     print(colored(f".::Reconnaissance finished in {delay} seconds::.", "white", attrs=["bold"]))
