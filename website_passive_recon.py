@@ -17,6 +17,7 @@ import dns.resolver
 import requests
 import time
 import sys
+import socket
 import datetime
 from termcolor import colored
 from dns.resolver import NoAnswer
@@ -27,6 +28,36 @@ from requests.exceptions import ProxyError
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0"
 
+
+def do_whois_request(ip, whois_server):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((whois_server, 43))
+    s.send((ip + "\r\n").encode())
+    response = b""
+    while True:
+        data = s.recv(4096)
+        response += data
+        if not data:
+            break
+    s.close()
+    return response.decode()
+
+
+def do_whois(ip):
+    whois_org = ["arin", "lacnic", "afrinic", "ripe", "apnic"]
+    whois_server_tpl = "whois.%s.net"
+    #First try with ARIN
+    whois_response = do_whois_request(ip, whois_server_tpl % "arin")
+    for line in whois_response.splitlines():
+        if line.strip().startswith("Ref:"):
+            # IP block is not managed by ARIN so we call the provided org in the Ref link
+            link = line[4:].strip(" ")
+            org = link.split("/")[-1]
+            if org.lower() in whois_org:
+                whois_response = do_whois_request(ip, whois_server_tpl % org)
+                break
+    return whois_response
+            
 
 def configure_proxy(http_proxy):
     web_proxies = {}
@@ -124,19 +155,8 @@ def get_passive_shared_hosts(ip, http_proxy):
 
 
 def get_ip_owner(ip, http_proxy):
-    web_proxies = configure_proxy(http_proxy)
     infos = []
-    service_url = "https://hackertarget.com/whois-lookup/"
-    post_data = {"theinput" : ip, "thetest": "whois", "name_of_nonce_field" : "ec52b6fbb9", "_wp_http_referer": "%2Fwhois-lookup%2F"}
-    response = requests.post(service_url, data=post_data, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
-    if response.status_code != 200:
-        infos.append(f"HTTP response code {response.status_code} received!")
-        return infos    
-    html = response.text
-    marker = "<pre id=\"formResponse\">"
-    html = html[html.index(marker)+len(marker):]
-    marker = "</pre>"
-    data = html[:html.index(marker)]
+    data = do_whois(ip)
     records = data.splitlines()
     records_skip_prefix = ["Ref:", "OrgTech", "OrgAbuse", "OrgNOC", "tech-c", "admin-c", "remarks", "e-mail", "abuse", "Comment", "#", "%"]
     for record in records:
@@ -181,7 +201,7 @@ def get_qualys_sslscan_cached_infos(domain, ip, http_proxy):
     # Qualys SSL (https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md)
     service_url = f"https://api.ssllabs.com/api/v3/getEndpointData?host={domain}&s={ip}&fromCache=on"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
-    if response.status_code != 200:
+    if "errors" not in response.text and "statusMessage" not in response.text:
         infos.append(f"HTTP response code {response.status_code} received!")
         return infos    
     data = response.json()
@@ -316,6 +336,9 @@ if __name__ == "__main__":
     print(colored(f"[HACKERTARGET] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
+        if ":" in ip:
+            print_infos(["IPV6 not supported"], "  ")
+            continue
         informations = get_active_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[THREATMINER] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
@@ -330,7 +353,11 @@ if __name__ == "__main__":
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
     print(colored(f"[GOOGLE] Provide the URL for dork for the domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
-    print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}",)
+    print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}")
+    print(colored(f"[WAYBACKMACHINE] Provide the URL for Internet Archive for the domain...", "blue", attrs=["bold"]))
+    print("Use the following URL from a browser:")
+    print(f"  https://web.archive.org/web/*/https://{args.domain_name}")
+    print(f"  https://web.archive.org/web/*/http://{args.domain_name}")
     print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
