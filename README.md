@@ -1,6 +1,5 @@
 [![Requirements Status](https://requires.io/github/righettod/website-passive-reconnaissance/requirements.svg?branch=master)](https://requires.io/github/righettod/website-passive-reconnaissance/requirements/?branch=master) [![Known Vulnerabilities](https://snyk.io/test/github/righettod/website-passive-reconnaissance/badge.svg?targetFile=requirements.txt)](https://snyk.io/test/github/righettod/website-passive-reconnaissance?targetFile=requirements.txt)
 
-
 # Objectives
 
 Script to automate, when possible, the **passive reconnaissance** performed on a website prior to an assessment (no direct hit on the target). 
@@ -21,14 +20,18 @@ $ pip install -r requirements.txt
 
 # API keys file
 
-API keys are expected to be provided within an INI file having the followign struture:
+> The script assume that an API key binded to the free version of the API is used of each service.
+
+API keys are expected to be provided within an **INI** file having the following structure:
 
 ```ini
 [API_KEYS]
 ;See https://www.shodan.io/
-shodan=xxx  
+shodan=xxx
 ;See https://www.hybrid-analysis.com
-hybrid-analysis=xxx  
+hybrid-analysis=xxx
+;See https://www.virustotal.com
+virustotal=xxx
 ```
 
 # Usage examples
