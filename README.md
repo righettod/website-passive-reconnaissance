@@ -26,7 +26,7 @@ Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
 $ pipreqs --force .
 ```
 
-# Update TLD list caching of module "tldextract"
+# Update TLD list caching of the module "tldextract"
 
 Use the following command from [here](https://github.com/john-kurkowski/tldextract#note-about-caching):
 
