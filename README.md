@@ -18,7 +18,7 @@ Use the following command:
 $ pip install -r requirements.txt
 ```
 
-# Update of the requirements.txt
+# Update of the "requirements.txt" file
 
 Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
 
