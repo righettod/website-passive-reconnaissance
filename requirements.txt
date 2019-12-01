@@ -1,4 +1,5 @@
-requests==2.22.0
 termcolor==1.1.0
+requests==2.22.0
+tldextract==2.2.2
 colorama==0.4.1
 dnspython==1.16.0

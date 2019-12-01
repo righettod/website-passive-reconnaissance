@@ -18,6 +18,22 @@ Use the following command:
 $ pip install -r requirements.txt
 ```
 
+# Update of the requirements.txt
+
+Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
+
+```bash
+$ pipreqs --force .
+```
+
+# Update TLD list caching of module "tldextract"
+
+Use the following command from [here](https://github.com/john-kurkowski/tldextract#note-about-caching):
+
+```bash
+$ tldextract --update
+```
+
 # API keys file
 
 > The script assume that an API key binded to the free version of the API is used of each service.

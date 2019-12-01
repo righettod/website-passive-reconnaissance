@@ -3,14 +3,7 @@
 Script to automate, when possible, the passive reconnaissance performed a website prior to an assessment.
 Also used to guide the reconnaissance phase by defining all steps (manual or automated).
 
-API Key INI file example (ex: api_key.ini):
-[API_KEYS]
-;See https://www.shodan.io/
-shodan=xxx
-;See https://www.hybrid-analysis.com
-hybrid-analysis=xxx
-;See https://www.virustotal.com
-virustotal=xxx
+See README.md file for API Key INI file example.
 """
 import colorama
 import argparse
@@ -21,6 +14,7 @@ import time
 import sys
 import socket
 import datetime
+import tldextract
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
@@ -70,11 +64,20 @@ def extract_infos_from_virus_total_response(http_response):
     return infos
 
 
+def get_domain_without_tld(domain):
+    domain_infos = tldextract.extract(domain)
+    domain_no_tld = f"{domain_infos.domain}"
+    if len(domain_infos.subdomain) > 0:
+        domain_no_tld = f"{domain_infos.subdomain}.{domain_infos.domain}"
+    return domain_no_tld
+
+
 def get_parent_domain(domain):
-    if domain.count(".") == 1:
-        return None
-    else:
-        return domain[domain.index(".") + 1:]    
+    parent_domain = None
+    domain_infos = tldextract.extract(domain)
+    if len(domain_infos.subdomain) > 0:
+        parent_domain = f"{domain_infos.domain}.{domain_infos.suffix}"
+    return parent_domain
 
 
 def configure_proxy(http_proxy):
@@ -347,6 +350,7 @@ def get_virus_total_report_infos(domain, parent_domain, ip_list, api_key, http_p
 def get_certificate_transparency_log_subdomains(domain, http_proxy):
     web_proxies = configure_proxy(http_proxy)
     infos = []
+    # See https://crt.sh
     service_url = f"https://crt.sh/?q=%.{domain}&output=json"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
     if response.status_code != 200:
@@ -357,7 +361,27 @@ def get_certificate_transparency_log_subdomains(domain, http_proxy):
         cert_name = f"{entry['name_value']} ({entry['issuer_name']})"
         if cert_name not in infos:
             infos.append(cert_name)
-    return infos      
+    return infos
+
+
+def get_github_repositories(domain_or_ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
+    infos = []
+    # See # See https://developer.github.com/v3/search/#search-repositories
+    term = f"%22{domain_or_ip}%22"
+    service_url = f"https://api.github.com/search/repositories?q=size:%3E0+{term}&sort=updated&order=desc"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))    
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    results = response.json()
+    for repo in results["items"]:
+        html_url = repo["html_url"]
+        is_fork = repo["fork"]
+        forks = repo["forks"]
+        watchers = repo["watchers"]
+        infos.append(f"{html_url} (IsFork: {is_fork} - Forks: {forks} - Watchers: {watchers})")
+    return infos    
 
 
 if __name__ == "__main__":
@@ -506,6 +530,29 @@ if __name__ == "__main__":
     if parent_domain != None:
         print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
         informations = get_certificate_transparency_log_subdomains(parent_domain, http_proxy_to_use)
+        print_infos(informations, "  ")
+    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))     
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_github_repositories(args.domain_name, http_proxy_to_use)
+    print_infos(informations, "  ")    
+    parent_domain = get_parent_domain(args.domain_name)
+    if parent_domain != None:
+        print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
+        informations = get_github_repositories(parent_domain, http_proxy_to_use)
+        print_infos(informations, "  ")
+    print(colored(f"Special search without the TLD for the domain and parent domain", "yellow", attrs=["bold"]))
+    domain_no_tld = get_domain_without_tld(args.domain_name)
+    print(colored(f"  {domain_no_tld}", "yellow", attrs=["bold"]))
+    informations = get_github_repositories(domain_no_tld, http_proxy_to_use)
+    print_infos(informations, "    ") 
+    if parent_domain != None:
+        parent_domain_no_tld = get_domain_without_tld(parent_domain)
+        print(colored(f"  {parent_domain_no_tld}", "yellow", attrs=["bold"]))
+        informations = get_github_repositories(parent_domain_no_tld, http_proxy_to_use)
+        print_infos(informations, "    ")
+    for ip in ips:
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))   
+        informations = get_github_repositories(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     delay = round(time.time() - start_time, 2)      
     print("")     
