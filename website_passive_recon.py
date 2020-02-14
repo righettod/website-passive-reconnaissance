@@ -177,7 +177,7 @@ def get_cnames(domain, name_server):
 def get_active_shared_hosts(ip, http_proxy):
     web_proxies = configure_proxy(http_proxy)
     infos = []
-    # HackerTaget API is limited of 50 queries per day
+    # HackerTarget API is limited of 50 queries per day
     # See https://hackertarget.com/ip-tools/
     service_url = f"https://api.hackertarget.com/reverseiplookup/?q={ip}"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
@@ -198,14 +198,26 @@ def get_passive_shared_hosts(ip, http_proxy):
     service_url = f"https://api.threatminer.org/v2/host.php?q={ip}&rt=2"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
     if response.status_code != 200:
-        infos.append(f"HTTP response code {response.status_code} received!")
-        return infos    
-    results = response.json() 
-    if results["status_code"] == "200":
-        for result in results["results"]:
-            vhost = result["domain"].split(":")[0]
-            if vhost not in infos:
-                infos.append(vhost)
+        infos.append(f"HTTP response code {response.status_code} received from ThreatMiner API !")
+    else: 
+        results = response.json()
+        if results["status_code"] == "200":
+            for result in results["results"]:
+                vhost = result["domain"].split(":")[0]
+                if vhost not in infos:
+                    infos.append(vhost)
+    # See https://github.com/AlienVault-OTX/ApiV2
+    service_url = f"https://www.threatcrowd.org/searchApi/v2/ip/report/?ip={ip}"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received from ThreatCrowd API !")
+    else:
+        results = response.json()
+        if "resolutions" in results:
+            for result in results["resolutions"]:
+                vhost = result["domain"]
+                if vhost not in infos:
+                    infos.append(vhost)
     return infos    
 
 
@@ -463,7 +475,7 @@ if __name__ == "__main__":
             continue
         informations = get_active_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[THREATMINER] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
+    print(colored(f"[THREATMINER+THREATCROWD] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_passive_shared_hosts(ip, http_proxy_to_use)
