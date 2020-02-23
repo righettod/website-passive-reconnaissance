@@ -15,6 +15,7 @@ import sys
 import socket
 import datetime
 import tldextract
+import json
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
@@ -23,6 +24,62 @@ from requests.exceptions import ProxyError
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0"
+
+
+def get_intelx_infos(ip_or_domain, api_key, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
+    infos = []   
+    # Intelligence X free API have hits credtis depending on the service consumed
+    # A new account must be created after consumed all credits 
+    # See https://intelx.io/account?tab=developer
+    request_headers = {"User-Agent": USER_AGENT, "x-key": api_key}
+    payload = {
+        "term": ip_or_domain,
+        "buckets": [],
+        "lookuplevel": 0,
+        "maxresults": 100,
+        "timeout": 0,
+        "datefrom": "",
+        "dateto": "",
+        "sort": 4,
+        "media": 0,
+        "terminate": []
+    }     
+    # First we must do a search
+    service_url = f"https://2.intelx.io/intelligent/search"    
+    response = requests.post(service_url, data=json.dumps(payload), headers=request_headers, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received for the search!")
+        return infos
+    # Then get the result for the search
+    search_id = str(response.json()["id"])
+    service_url += f"/result?id={search_id}"
+    response = requests.get(service_url, headers=request_headers, proxies=web_proxies, verify=(http_proxy is None))
+    # Count result by bucket
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received for the result of the search!")
+        return infos
+    data = response.json()
+    buckets = {}
+    pasties = {}
+    if "records" in data:
+        for record in data["records"]:
+            if "bucket" in record:
+                bucket_name = record["bucket"]
+                # Special processing for Pasties, we extract URL and added date...
+                if bucket_name.lower() == "pastes" and "keyvalues" in record:
+                    for paste in record["keyvalues"]:
+                        value = paste["value"] # Contains the paste URL
+                        pasties[value] = record["added"]
+                if bucket_name not in buckets:
+                    buckets[bucket_name.lower()] = 0
+                buckets[bucket_name.lower()] += 1
+    # Add the information
+    for bucket_name in buckets:
+        infos.append(f"{buckets[bucket_name]} records for bucket {bucket_name}")
+    for paste in pasties:
+        infos.append(f"Paste '{paste}' added on {pasties[paste]}")
+    return infos
 
 
 def extract_infos_from_virus_total_response(http_response):
@@ -488,6 +545,12 @@ if __name__ == "__main__":
         print(f"  https://toolbar.netcraft.com/site_report?url={parent_domain}")            
     for ip in ips:
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
+    print(colored(f"[PASTEBIN via GOOGLE] Provide the URL for dork for the domain and parent domain...", "blue", attrs=["bold"]))
+    print("Use the following URL from a browser:")
+    print(f"  https://www.google.com/search?q=site%3Apastebin.com+%22{args.domain_name}%22&oq=site%3Apastebin.com+%22{args.domain_name}%22")
+    parent_domain = get_parent_domain(args.domain_name)
+    if parent_domain != None:
+        print(f"  https://www.google.com/search??q=site%3Apastebin.com+%22{parent_domain}%22&oq=site%3Apastebin.com+%22{parent_domain}%22")
     print(colored(f"[GOOGLE] Provide the URL for dork for the domain and parent domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
     print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}")
@@ -566,6 +629,36 @@ if __name__ == "__main__":
         print(colored(f"{ip}", "yellow", attrs=["bold"]))   
         informations = get_github_repositories(ip, http_proxy_to_use)
         print_infos(informations, "  ")
+    print(colored(f"[INTELX] Check if the site have information about the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))
+    print(colored("[i]","green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
+    if "intelx" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["intelx"]
+        infos_for_ip = {}
+        for ip in ips:
+            infos_for_ip[ip] = get_intelx_infos(ip, api_key, http_proxy_to_use)
+        infos_for_domain = get_intelx_infos(args.domain_name, api_key, http_proxy_to_use)
+        infos_for_parent_domain = []
+        parent_domain = get_parent_domain(args.domain_name)
+        if parent_domain != None:
+            infos_for_parent_domain = get_intelx_infos(parent_domain, api_key, http_proxy_to_use)
+        for ip in ips:
+            print(colored(f"{ip}", "yellow", attrs=["bold"]))
+            if len(infos_for_ip[ip]) > 0:
+                print("  Data found (see below), so, use the following URL from a browser:")
+                print(f"    https://intelx.io/?s={ip}")               
+            print_infos(infos_for_ip[ip], "  ")
+        print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+        if len(infos_for_domain) > 0:
+            print("  Data found (see below), so, use the following URL from a browser:")
+            print(f"    https://intelx.io/?s={args.domain_name}")               
+        print_infos(infos_for_domain, "  ")   
+        if len(infos_for_parent_domain) > 0:
+            print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
+            print("  Data found (see below), so, use the following URL from a browser:")
+            print(f"    https://intelx.io/?s={parent_domain}")               
+            print_infos(infos_for_parent_domain, "  ")                        
+    else:
+        print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
     delay = round(time.time() - start_time, 2)      
     print("")     
-    print(colored(f".::Reconnaissance finished in {delay} seconds::.", "white", attrs=["bold"]))
+    print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")

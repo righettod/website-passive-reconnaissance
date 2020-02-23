@@ -48,6 +48,8 @@ shodan=xxx
 hybrid-analysis=xxx
 ;See https://www.virustotal.com
 virustotal=xxx
+;See https://intelx.io/
+intelx=xxx
 ```
 
 # Usage examples
