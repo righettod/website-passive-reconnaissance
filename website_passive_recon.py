@@ -16,14 +16,38 @@ import socket
 import datetime
 import tldextract
 import json
+import os
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
 from dns.resolver import NXDOMAIN
 from requests.exceptions import ProxyError
+from googlesearch import search
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/70.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/71.0"
+
+INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
+                                "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
+                                "xml", "back", "txt"]
+
+
+def get_google_dork_results(dork, http_proxy):
+    # The module Google use urllib and it uses the environment 
+    # variable "http_proxy" to determine which HTTP proxy to use
+    if http_proxy is not None:
+        os.environ["http_proxy"] = http_proxy
+    infos = []
+    # Cleanup any exisiting Google cookies jar file
+    google_cookies_file = ".google-cookie"
+    if os.path.exists(google_cookies_file):
+        os.remove(google_cookies_file)
+    # Leverage the module Google to do the search via the dork
+    search_results = search(dork, tld="com", num=100, stop=100, pause=2, user_agent=USER_AGENT)
+    for result in search_results:
+        infos.append(f"Record found: {result}")
+    infos.sort()
+    return infos
 
 
 def get_intelx_infos(ip_or_domain, api_key, http_proxy):
@@ -545,18 +569,29 @@ if __name__ == "__main__":
         print(f"  https://toolbar.netcraft.com/site_report?url={parent_domain}")            
     for ip in ips:
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
-    print(colored(f"[PASTEBIN via GOOGLE] Provide the URL for dork for the domain and parent domain...", "blue", attrs=["bold"]))
-    print("Use the following URL from a browser:")
-    print(f"  https://www.google.com/search?q=site%3Apastebin.com+%22{args.domain_name}%22&oq=site%3Apastebin.com+%22{args.domain_name}%22")
+    print(colored(f"[PASTEBIN via GOOGLE] Apply Google Dork for the domain and parent domain...", "blue", attrs=["bold"]))
+    dork = f"site:pastebin.com \"{args.domain_name}\""
+    print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
+    informations = get_google_dork_results(dork, http_proxy_to_use)
+    print_infos(informations, "  ")    
     parent_domain = get_parent_domain(args.domain_name)
     if parent_domain != None:
-        print(f"  https://www.google.com/search??q=site%3Apastebin.com+%22{parent_domain}%22&oq=site%3Apastebin.com+%22{parent_domain}%22")
-    print(colored(f"[GOOGLE] Provide the URL for dork for the domain and parent domain...", "blue", attrs=["bold"]))
-    print("Use the following URL from a browser:")
-    print(f"  https://www.google.com/search?q=site%3A{args.domain_name}&oq=site%3A{args.domain_name}")
+        dork = f"site:pastebin.com \"{parent_domain}\""
+        print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
+        informations = get_google_dork_results(dork, http_proxy_to_use)
+        print_infos(informations, "  ")
+    print(colored(f"[GOOGLE] Apply Google Dork for the domain and parent domain...", "blue", attrs=["bold"]))
+    file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
+    dork = f"site:{args.domain_name} filetype:{file_types}"
+    print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
+    informations = get_google_dork_results(dork, http_proxy_to_use)
+    print_infos(informations, "  ")  
     parent_domain = get_parent_domain(args.domain_name)
     if parent_domain != None:
-        print(f"  https://www.google.com/search?q=site%3A{parent_domain}&oq=site%3A{parent_domain}")
+        dork = f"site:{parent_domain} filetype:{file_types}"
+        print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
+        informations = get_google_dork_results(dork, http_proxy_to_use)
+        print_infos(informations, "  ")   
     print(colored(f"[WAYBACKMACHINE] Provide the URL for Internet Archive for the domain and parent domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
     print(f"  https://web.archive.org/web/*/https://{args.domain_name}")

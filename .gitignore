@@ -105,3 +105,6 @@ venv.bak/
 
 # INI file
 *.ini
+
+# Extra
+.google-cookie
