@@ -76,21 +76,21 @@ optional arguments:
   -s               Save the result of the Google/Bing Dork searching for
                    interesting files to the file 'filetype_dork_result.txt'.
 
-$ python website_passive_recon.py -d excellium.lu
+$ python website_passive_recon.py -d excellium-services.com
 ...
 
-$ python website_passive_recon.py -d excellium.lu -n 8.8.8.8
+$ python website_passive_recon.py -d excellium-services.com -n 8.8.8.8
 ...
 
-$ python website_passive_recon.py -d excellium.lu -a api_keys.ini
+$ python website_passive_recon.py -d excellium-services.com -a api_keys.ini
 ...
 
-$ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8
+$ python website_passive_recon.py -d excellium-services.com -a api_keys.ini -n 8.8.8.8
 ...
 
-$ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
+$ python website_passive_recon.py -d excellium-services.com -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
 ...
 
-$ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
+$ python website_passive_recon.py -d excellium-services.com -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
 ...
 ```
