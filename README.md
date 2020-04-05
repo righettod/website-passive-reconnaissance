@@ -74,7 +74,7 @@ optional arguments:
   -p HTTP_PROXY    HTTP proxy to use for all HTTP call to differents services.
                    Ex: http://5.196.132.126:3128
   -s               Save the result of the Google/Bing Dork searching for
-                   interesting files to the file 'filetype_google_dork_result.txt'.
+                   interesting files to the file 'filetype_dork_result.txt'.
 
 $ python website_passive_recon.py -d excellium.lu
 ...
