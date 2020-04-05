@@ -14,39 +14,76 @@ import time
 import sys
 import socket
 import datetime
-import tldextract
 import json
 import os
+import tldextract
+import urllib.parse
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
 from dns.resolver import NXDOMAIN
 from requests.exceptions import ProxyError
 from googlesearch import search
+from urllib.error import HTTPError
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:70.0) Gecko/20100101 Firefox/71.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0"
 
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                 "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
                                 "xml", "back", "txt"]
 
 
-def get_google_dork_results(dork, http_proxy):
-    # The module Google use urllib and it uses the environment 
-    # variable "http_proxy" to determine which HTTP proxy to use
-    if http_proxy is not None:
-        os.environ["http_proxy"] = http_proxy
+def get_bing_dork_results(dork, api_key, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
     infos = []
-    # Cleanup any exisiting Google cookies jar file
-    google_cookies_file = ".google-cookie"
-    if os.path.exists(google_cookies_file):
-        os.remove(google_cookies_file)
-    # Leverage the module Google to do the search via the dork
-    search_results = search(dork, tld="com", num=100, stop=100, pause=2, user_agent=USER_AGENT)
-    for result in search_results:
-        infos.append(f"Record found: {result}")
-    infos.sort()
+    # See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
+    # For API key including trial one
+    search_url = "https://api.cognitive.microsoft.com/bing/v7.0/search"
+    request_headers = {"Ocp-Apim-Subscription-Key": api_key, "User-Agent": USER_AGENT}
+    params = {"q": dork, "textFormat": "HTML", "count": 50, "safeSearch": "Off"}
+    response = requests.get(search_url, params=params, headers=request_headers, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code == 200:
+        data = response.json()
+        if "webPages" in data:    
+            record_count = data["webPages"]["totalEstimatedMatches"]
+            infos.append(f"Estimated records count: {record_count}")
+            for result in data["webPages"]["value"]:
+                link = result["url"]
+                infos.append(f"Record found: {link}")
+    else:
+        url_encoded_dork = urllib.parse.quote(dork)
+        infos.clear()
+        infos.append(f"Bing respond 'HTTP Error {response.status_code}: {response.reason}' => Check your API key or use the Dork in a browser using the following url:")
+        infos.append(f"https://www.bing.com/search?q={url_encoded_dork}")            
+    return infos
+
+
+def get_google_dork_results(dork, http_proxy):
+    infos = []
+    try:
+        # The module Google use urllib and it uses the environment 
+        # variable "http_proxy" to determine which HTTP proxy to use
+        if http_proxy is not None:
+            os.environ["http_proxy"] = http_proxy
+        # Leverage the module Google to do the search via the dork
+        # Cleanup any exisiting Google cookies jar file
+        google_cookies_file = ".google-cookie"
+        if os.path.exists(google_cookies_file):
+            os.remove(google_cookies_file)  
+        # Issue the on Google.com
+        search_results = search(dork, tld="com", num=100, stop=100, pause=2, user_agent=USER_AGENT)                      
+        for result in search_results:
+            infos.append(f"Record found: {result}")
+        infos.sort()
+    except HTTPError as err:
+        if err.code == 429:
+            url_encoded_dork = urllib.parse.quote(dork)
+            infos.clear()
+            infos.append("Google respond 'HTTP Error 429: Too Many Requests' => Use another IP address or use the Dork in a browser using the following url:")
+            infos.append(f"https://www.google.com/search?q={url_encoded_dork}")
+        else:
+            raise
     return infos
 
 
@@ -151,14 +188,6 @@ def get_domain_without_tld(domain):
     if len(domain_infos.subdomain) > 0:
         domain_no_tld = f"{domain_infos.subdomain}.{domain_infos.domain}"
     return domain_no_tld
-
-
-def get_parent_domain(domain):
-    parent_domain = None
-    domain_infos = tldextract.extract(domain)
-    if len(domain_infos.subdomain) > 0:
-        parent_domain = f"{domain_infos.domain}.{domain_infos.suffix}"
-    return parent_domain
 
 
 def configure_proxy(http_proxy):
@@ -414,20 +443,18 @@ def get_hybrid_analysis_report_infos(query, api_key, http_proxy):
     return infos
 
 
-def get_virus_total_report_infos(domain, parent_domain, ip_list, api_key, http_proxy):
+def get_virus_total_report_infos(domain, ip_list, api_key, http_proxy):
     web_proxies = configure_proxy(http_proxy)              
     infos = {}
     # See https://developers.virustotal.com/reference
     # Note: As VT as a limit of 4 requests by minute then this function
     # handle globally the retrieval of infos from VT and handle this limitation
-    # Get info for the domains: domain + parent domain
+    # Get info for the domain
     vt_call_count = 0
-    for domain in [domain, parent_domain]:
-        if domain is not None:
-            service_url = f"https://www.virustotal.com/vtapi/v2/domain/report?apikey={api_key}&domain={domain}"
-            response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))            
-            vt_call_count += 1
-            infos[domain] = extract_infos_from_virus_total_response(response)
+    service_url = f"https://www.virustotal.com/vtapi/v2/domain/report?apikey={api_key}&domain={domain}"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))            
+    vt_call_count += 1
+    infos[domain] = extract_infos_from_virus_total_response(response)
     # Get info for the IPs
     for ip in ip_list:
         if vt_call_count > 4:
@@ -486,6 +513,7 @@ if __name__ == "__main__":
     parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
     parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
     parser.add_argument("-p", action="store", dest="http_proxy", default=None, help="HTTP proxy to use for all HTTP call to differents services (ex: http://88.198.50.103:9080).", required=False)
+    parser.add_argument("-s", action="store_true", dest="store_filetype_dork_result", default=False, help="Save the result of the Google/Bing Dork searching for interesting files to the file 'filetype_dork_result.txt'.", required=False)
     args = parser.parse_args()
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
@@ -529,15 +557,12 @@ if __name__ == "__main__":
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_ip_owner(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[SHODAN] Extract the information of the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))
+    print(colored(f"[SHODAN] Extract the information of the IP addresses and the domain...", "blue", attrs=["bold"]))
     if "shodan" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["shodan"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
         print("  Search with filter using the API with a free tier API key is not allowed, so, use the following URL from a browser:")
-        print(f"    https://www.shodan.io/search?query=hostname%3A{args.domain_name}")
-        parent_domain = get_parent_domain(args.domain_name)
-        if parent_domain != None:
-            print(f"    https://www.shodan.io/search?query=hostname%3A{parent_domain}")            
+        print(f"    https://www.shodan.io/search?query=hostname%3A{args.domain_name}")          
         is_single_ip = len(ips) < 2
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
@@ -561,110 +586,102 @@ if __name__ == "__main__":
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_passive_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[NETCRAFT] Provide the URL to report for the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))
+    print(colored(f"[NETCRAFT] Provide the URL to report for the IP addresses and the domain...", "blue", attrs=["bold"]))
     print("No API provided and browser required, so, use the following URL from a browser:")
-    print(f"  https://toolbar.netcraft.com/site_report?url={args.domain_name}")
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        print(f"  https://toolbar.netcraft.com/site_report?url={parent_domain}")            
+    print(f"  https://toolbar.netcraft.com/site_report?url={args.domain_name}")          
     for ip in ips:
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
-    print(colored(f"[PASTEBIN via GOOGLE] Apply Google Dork for the domain and parent domain...", "blue", attrs=["bold"]))
+
+    print(colored(f"[PASTEBIN via GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
     dork = f"site:pastebin.com \"{args.domain_name}\""
     print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
-    print_infos(informations, "  ")    
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        dork = f"site:pastebin.com \"{parent_domain}\""
-        print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
-        informations = get_google_dork_results(dork, http_proxy_to_use)
-        print_infos(informations, "  ")
-    print(colored(f"[GOOGLE] Apply Google Dork for the domain and parent domain...", "blue", attrs=["bold"]))
+    print_infos(informations, "  ")
+    print(colored(f"[GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
     file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
     dork = f"site:{args.domain_name} filetype:{file_types}"
     print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
-    print_infos(informations, "  ")  
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        dork = f"site:{parent_domain} filetype:{file_types}"
+    print_infos(informations, "  ")
+    if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
+        file_name = "filetype_dork_result.txt"
+        with open(file_name, "a+") as f:
+            f.write("\n")
+            f.write("\n".join(informations[1:]))        
+        print(colored("[i]","green") + " " + str(len(informations)-1) +  f" results saved to '{file_name}' file.")  
+    print(colored(f"[PASTEBIN via BING] Apply Bing Dork for the domain, get the 50 first records (max per page allowed by the API)...", "blue", attrs=["bold"]))
+    if "azure-cognitive-services-bing-web-search" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["azure-cognitive-services-bing-web-search"]
+        dork = f"site:pastebin.com \"{args.domain_name}\""
         print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
-        informations = get_google_dork_results(dork, http_proxy_to_use)
-        print_infos(informations, "  ")   
-    print(colored(f"[WAYBACKMACHINE] Provide the URL for Internet Archive for the domain and parent domain...", "blue", attrs=["bold"]))
+        informations = get_bing_dork_results(dork, api_key, http_proxy_to_use)
+        print_infos(informations, "  ")
+    else:
+        print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))   
+    print(colored(f"[BING] Apply Bing Dork for the domain, get the 50 first records (max per page allowed by the API)...", "blue", attrs=["bold"]))
+    if "azure-cognitive-services-bing-web-search" in api_key_config["API_KEYS"]:   
+        file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
+        dork = f"site:{args.domain_name} AND (filetype:{file_types})"
+        print("Perform the following dork: " +  colored(f"{dork}", "yellow", attrs=["bold"]))
+        informations = get_bing_dork_results(dork, api_key, http_proxy_to_use)
+        print_infos(informations, "  ")
+        if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
+            file_name = "filetype_dork_result.txt"
+            with open(file_name, "a+") as f:
+                f.write("\n")
+                f.write("\n".join(informations[1:]))        
+            print(colored("[i]","green") + " " + str(len(informations)-1) +  f" results saved to '{file_name}' file.")    
+    else:
+        print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
+    print(colored(f"[WAYBACKMACHINE] Provide the URL for Internet Archive for the domain...", "blue", attrs=["bold"]))
     print("Use the following URL from a browser:")
     print(f"  https://web.archive.org/web/*/https://{args.domain_name}")
     print(f"  https://web.archive.org/web/*/http://{args.domain_name}")
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        print(f"  https://web.archive.org/web/*/https://{parent_domain}")
-        print(f"  https://web.archive.org/web/*/http://{parent_domain}")
     print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_qualys_sslscan_cached_infos(args.domain_name, ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[HYBRID-ANALYSIS] Extract the verdict for the IP addresses, domain and parent domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
+    print(colored(f"[HYBRID-ANALYSIS] Extract the verdict for the IP addresses and the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "hybrid-analysis" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["hybrid-analysis"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
         informations = get_hybrid_analysis_report_infos(f"domain:{args.domain_name}", api_key, http_proxy_to_use)
         print_infos(informations, "  ")
-        parent_domain = get_parent_domain(args.domain_name)
-        if parent_domain != None:
-            print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
-            informations = get_hybrid_analysis_report_infos(f"domain:{parent_domain}", api_key, http_proxy_to_use)
-            print_infos(informations, "  ")
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))   
             informations = get_hybrid_analysis_report_infos(f"host:%22{ip}%22", api_key, http_proxy_to_use)
             print_infos(informations, "  ")
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))     
-    print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses, domain and parent domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
+    print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses and the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "virustotal" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["virustotal"]
-        global_informations = get_virus_total_report_infos(args.domain_name, get_parent_domain(args.domain_name), ips, api_key, http_proxy_to_use)
+        global_informations = get_virus_total_report_infos(args.domain_name, ips, api_key, http_proxy_to_use)
         for k in global_informations:
             print(colored(f"{k}", "yellow", attrs=["bold"]))   
             informations = global_informations[k]
             print_infos(informations, "  ")            
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
-    print(colored(f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain and parent domain...", "blue", attrs=["bold"]))     
+    print(colored(f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain...", "blue", attrs=["bold"]))     
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_certificate_transparency_log_subdomains(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
-        informations = get_certificate_transparency_log_subdomains(parent_domain, http_proxy_to_use)
-        print_infos(informations, "  ")
-    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))     
+    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses and the domain...", "blue", attrs=["bold"]))     
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_github_repositories(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")    
-    parent_domain = get_parent_domain(args.domain_name)
-    if parent_domain != None:
-        print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
-        informations = get_github_repositories(parent_domain, http_proxy_to_use)
-        print_infos(informations, "  ")
-    print(colored(f"Special search without the TLD for the domain and parent domain", "yellow", attrs=["bold"]))
+    print(colored(f"Special search without the TLD for the domain", "yellow", attrs=["bold"]))
     domain_no_tld = get_domain_without_tld(args.domain_name)
     print(colored(f"  {domain_no_tld}", "yellow", attrs=["bold"]))
     informations = get_github_repositories(domain_no_tld, http_proxy_to_use)
     print_infos(informations, "    ") 
-    if parent_domain != None:
-        parent_domain_no_tld = get_domain_without_tld(parent_domain)
-        print(colored(f"  {parent_domain_no_tld}", "yellow", attrs=["bold"]))
-        informations = get_github_repositories(parent_domain_no_tld, http_proxy_to_use)
-        print_infos(informations, "    ")
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))   
         informations = get_github_repositories(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[INTELX] Check if the site have information about the IP addresses, domain and parent domain...", "blue", attrs=["bold"]))
+    print(colored(f"[INTELX] Check if the site have information about the IP addresses and the domain...", "blue", attrs=["bold"]))
     print(colored("[i]","green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
     if "intelx" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["intelx"]
@@ -672,10 +689,6 @@ if __name__ == "__main__":
         for ip in ips:
             infos_for_ip[ip] = get_intelx_infos(ip, api_key, http_proxy_to_use)
         infos_for_domain = get_intelx_infos(args.domain_name, api_key, http_proxy_to_use)
-        infos_for_parent_domain = []
-        parent_domain = get_parent_domain(args.domain_name)
-        if parent_domain != None:
-            infos_for_parent_domain = get_intelx_infos(parent_domain, api_key, http_proxy_to_use)
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
             if len(infos_for_ip[ip]) > 0:
@@ -686,12 +699,7 @@ if __name__ == "__main__":
         if len(infos_for_domain) > 0:
             print("  Data found (see below), so, use the following URL from a browser:")
             print(f"    https://intelx.io/?s={args.domain_name}")               
-        print_infos(infos_for_domain, "  ")   
-        if len(infos_for_parent_domain) > 0:
-            print(colored(f"{parent_domain}", "yellow", attrs=["bold"]))
-            print("  Data found (see below), so, use the following URL from a browser:")
-            print(f"    https://intelx.io/?s={parent_domain}")               
-            print_infos(infos_for_parent_domain, "  ")                        
+        print_infos(infos_for_domain, "  ")                     
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
     delay = round(time.time() - start_time, 2)      

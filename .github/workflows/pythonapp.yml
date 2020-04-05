@@ -20,4 +20,4 @@ jobs:
         pip install -r requirements.txt
     - name: Try an execution
       run: |        
-        python website_passive_recon.py -d luxair.lu -n 8.8.8.8
+        python website_passive_recon.py -d excellium-services.com -s -n 8.8.8.8

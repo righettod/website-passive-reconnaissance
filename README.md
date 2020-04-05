@@ -50,6 +50,8 @@ hybrid-analysis=xxx
 virustotal=xxx
 ;See https://intelx.io/
 intelx=xxx
+;See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
+azure-cognitive-services-bing-web-search=xxx
 ```
 
 # Usage examples
@@ -59,7 +61,7 @@ $ python --version
 Python 3.7.5
 
 $ python website_passive_recon.py --help
-usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY]
+usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
 
 optional arguments:
   -h, --help       show this help message and exit
@@ -71,6 +73,8 @@ optional arguments:
                    Ex: 8.8.8.8
   -p HTTP_PROXY    HTTP proxy to use for all HTTP call to differents services.
                    Ex: http://5.196.132.126:3128
+  -s               Save the result of the Google/Bing Dork searching for
+                   interesting files to the file 'filetype_google_dork_result.txt'.
 
 $ python website_passive_recon.py -d excellium.lu
 ...
@@ -85,5 +89,8 @@ $ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8
 ...
 
 $ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
+...
+
+$ python website_passive_recon.py -d excellium.lu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
 ...
 ```
