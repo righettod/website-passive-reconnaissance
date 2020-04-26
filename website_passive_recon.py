@@ -7,6 +7,7 @@ See README.md file for API Key INI file example.
 """
 import colorama
 import argparse
+import collections
 import configparser
 import dns.resolver
 import requests
@@ -360,7 +361,7 @@ def get_shodan_ip_infos(ip, api_key, http_proxy):
         return infos    
     data = response.json() 
     value = data["last_update"]
-    infos.append(f"Last update = {value}")
+    infos.append(f"Last scan date = {value}")
     value = data["isp"]
     infos.append(f"ISP = {value}")
     value = data["org"]
@@ -369,6 +370,56 @@ def get_shodan_ip_infos(ip, api_key, http_proxy):
     infos.append(f"Hostnames = {value}")
     value = data["ports"]
     infos.append(f"Ports = {value}")
+    return infos
+
+
+def get_shodan_cpe_cve_infos(ip, api_key, http_proxy):
+    web_proxies = configure_proxy(http_proxy)         
+    infos = []
+    # See https://developer.shodan.io/api
+    service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&history=true"
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    data = response.json()  
+    if "data" in data:
+        # Extract the whole list of CPE and CVE detected by Shodan gathered by scan date
+        cpe_cve_collection = collections.OrderedDict()
+        for record in data["data"]:
+            if "cpe" in record or "vulns" in record:
+                timestamp = record["timestamp"]
+                if timestamp not in cpe_cve_collection:
+                    cpe_cve_collection[timestamp] = {"CPE":[], "CVE":[]}
+                if "cpe" in record:
+                    cpe_cve_collection[timestamp]["CPE"].extend(record["cpe"])
+                if "vulns" in record and len(record["vulns"]) > 0:
+                    cves = []
+                    vulns = record["vulns"]
+                    for vuln_id in vulns:
+                        summary = vulns[vuln_id]["summary"]
+                        if len(summary) > 100:
+                            summary = summary[:100] + "..."
+                        cves.append("CVSS " + str(vulns[vuln_id]["cvss"]) + " - " + vuln_id + " - " + summary)
+                    cves.sort(reverse=True) # Highest CVSS score on top
+                    cpe_cve_collection[timestamp]["CVE"].extend(cves)
+        # Extract interesting infos by showing detected CPE with their associated CVE
+        cpe_already_extracted = []
+        cve_already_extracted = []       
+        for cpe_cve_record in cpe_cve_collection:
+            scan_date_already_added = False
+            for cpe in cpe_cve_collection[cpe_cve_record]["CPE"]:
+                if cpe not in cpe_already_extracted:
+                    if not scan_date_already_added:
+                        infos.append(f"Scan date {cpe_cve_record}:")
+                        scan_date_already_added = True
+                    value = f"  Detected software: '{cpe}'"
+                    infos.append(value)
+                    cpe_already_extracted.append(cpe)
+            for cve in cpe_cve_collection[cpe_cve_record]["CVE"]:
+                if cve not in cve_already_extracted:
+                    infos.append(f"  Detected CVE: {cve}")
+                    cve_already_extracted.append(cve)
     return infos
 
 
@@ -557,7 +608,7 @@ if __name__ == "__main__":
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_ip_owner(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[SHODAN] Extract the information of the IP addresses and the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[SHODAN] Extract the general information of the IP addresses and the domain...", "blue", attrs=["bold"]))
     if "shodan" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["shodan"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
@@ -567,6 +618,19 @@ if __name__ == "__main__":
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
             informations = get_shodan_ip_infos(ip, api_key, http_proxy_to_use)
+            print_infos(informations, "  ")
+            # Add tempo due to API limitation (API methods are rate-limited to 1 request by second)
+            if not is_single_ip:
+                time.sleep(1)
+    else:
+        print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
+    print(colored(f"[SHODAN] Extract the CPE/CVE information of the IP addresses...", "blue", attrs=["bold"]))
+    if "shodan" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["shodan"]         
+        is_single_ip = len(ips) < 2
+        for ip in ips:
+            print(colored(f"{ip}", "yellow", attrs=["bold"]))
+            informations = get_shodan_cpe_cve_infos(ip, api_key, http_proxy_to_use)
             print_infos(informations, "  ")
             # Add tempo due to API limitation (API methods are rate-limited to 1 request by second)
             if not is_single_ip:
