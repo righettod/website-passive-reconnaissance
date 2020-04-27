@@ -233,7 +233,7 @@ def do_whois_request(ip, whois_server):
         if not data:
             break
     s.close()
-    return response.decode()
+    return response.decode("utf-8","ignore")
 
 
 def do_whois(ip):
