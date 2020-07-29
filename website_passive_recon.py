@@ -377,7 +377,8 @@ def get_shodan_cpe_cve_infos(ip, api_key, http_proxy):
     web_proxies = configure_proxy(http_proxy)         
     infos = []
     # See https://developer.shodan.io/api
-    service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&history=true"
+    # Note: Historical IP lookups require a membership or API subscription
+    service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&history=false"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))
     if response.status_code != 200:
         infos.append(f"HTTP response code {response.status_code} received!")
