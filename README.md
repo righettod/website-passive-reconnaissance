@@ -61,17 +61,22 @@ $ python --version
 Python 3.7.5
 
 $ python website_passive_recon.py --help
-usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
+usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] 
+                                [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
 
 optional arguments:
-  -h, --help       show this help message and exit
-  -a API_KEY_FILE  Configuration INI file with all API keys (ex: conf.ini).
-  -n NAME_SERVER   Name server to use for the DNS query (ex: 8.8.8.8).
-  -p HTTP_PROXY    HTTP proxy to use for all HTTP call to differents services (ex: http://88.198.50.103:9080).
-  -s               Save the result of the Google/Bing Dork searching for interesting files to the file 'filetype_dork_result.txt'.
+  -h, --help      Show this help message and exit
+  -a API_KEY_FILE Configuration INI file with all API keys 
+                  (ex: conf.ini).
+  -n NAME_SERVER  Name server to use for the DNS query 
+                  (ex: 8.8.8.8).
+  -p HTTP_PROXY   HTTP proxy to use for all HTTP call to differents services 
+                  (ex: http://88.198.50.103:9080).
+  -s              Save the result of the Google/Bing Dork searching for interesting files 
+                  to the file 'filetype_dork_result.txt'.
 
 required arguments:
-  -d DOMAIN_NAME   Domain to analyse (ex: righettod.eu).
+  -d DOMAIN_NAME  Domain to analyse (ex: righettod.eu).
 
 $ python website_passive_recon.py -d righettod.eu
 ...
@@ -85,9 +90,11 @@ $ python website_passive_recon.py -d righettod.eu -a api_keys.ini
 $ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
+$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
+                                  -p http://5.196.132.126:3128
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
+$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
+                                  -p http://5.196.132.126:3128 -s
 ...
 ```
