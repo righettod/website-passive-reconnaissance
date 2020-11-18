@@ -259,7 +259,7 @@ def get_ip_addresses(domain, name_server, record_types):
         resolver.nameservers = [name_server]
     for record_type in record_types:
         try:
-            answer = resolver.query(domain, record_type)
+            answer = resolver.resolve(domain, record_type)
             for data in answer:
                 ips.append(data.to_text())
         except NoAnswer:
@@ -277,7 +277,7 @@ def get_cnames(domain, name_server):
     if name_server is not None:
         resolver.nameservers = [name_server]
     try:
-        answer = resolver.query(domain, "CNAME")
+        answer = resolver.resolve(domain, "CNAME")
         for data in answer:
             cnames.append(data.target.to_text())
     except NoAnswer:
@@ -561,7 +561,8 @@ if __name__ == "__main__":
     colorama.init()
     start_time = time.time()
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: www.righettod.eu).", required=True)
+    required_params = parser.add_argument_group("required arguments")
+    required_params.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: righettod.eu).", required=True)
     parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
     parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
     parser.add_argument("-p", action="store", dest="http_proxy", default=None, help="HTTP proxy to use for all HTTP call to differents services (ex: http://88.198.50.103:9080).", required=False)
