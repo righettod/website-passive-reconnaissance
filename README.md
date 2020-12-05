@@ -60,8 +60,8 @@ azure-cognitive-services-bing-web-search=xxx
 $ python --version
 Python 3.7.5
 
-$ python website_passive_recon.py --help
-usage: website_passive_recon.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] 
+$ python wpr.py --help
+usage: wpr.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] 
                                 [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
 
 optional arguments:
@@ -78,23 +78,23 @@ optional arguments:
 required arguments:
   -d DOMAIN_NAME  Domain to analyse (ex: righettod.eu).
 
-$ python website_passive_recon.py -d righettod.eu
+$ python wpr.py -d righettod.eu
 ...
 
-$ python website_passive_recon.py -d righettod.eu -n 8.8.8.8
+$ python wpr.py -d righettod.eu -n 8.8.8.8
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini
+$ python wpr.py -d righettod.eu -a api_keys.ini
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8
+$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
+$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
                                   -p http://5.196.132.126:3128
 ...
 
-$ python website_passive_recon.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
+$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
                                   -p http://5.196.132.126:3128 -s
 ...
 ```

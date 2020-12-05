@@ -28,7 +28,7 @@ from googlesearch import search
 from urllib.error import HTTPError
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"
 
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                 "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
@@ -539,7 +539,7 @@ def get_certificate_transparency_log_subdomains(domain, http_proxy):
 def get_github_repositories(domain_or_ip, http_proxy):
     web_proxies = configure_proxy(http_proxy)
     infos = []
-    # See # See https://developer.github.com/v3/search/#search-repositories
+    # See https://developer.github.com/v3/search/#search-repositories
     term = f"%22{domain_or_ip}%22"
     service_url = f"https://api.github.com/search/repositories?q=size:%3E0+{term}&sort=updated&order=desc"
     response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None))    
@@ -553,7 +553,27 @@ def get_github_repositories(domain_or_ip, http_proxy):
         forks = repo["forks"]
         watchers = repo["watchers"]
         infos.append(f"{html_url} (IsFork: {is_fork} - Forks: {forks} - Watchers: {watchers})")
-    return infos    
+    return infos  
+
+
+def get_softwareheritage_infos(domain_or_ip, http_proxy):
+    web_proxies = configure_proxy(http_proxy)
+    infos = {"DATA": []}
+    # See https://archive.softwareheritage.org/api
+    service_url = f"https://archive.softwareheritage.org/api/1/origin/search/{domain_or_ip}/?limit=1000&with_visit=true"
+    # Set a long timeout (up to 4 minutes) because the response take a while to reply
+    response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=240)    
+    if response.status_code != 200:
+        infos.append(f"HTTP response code {response.status_code} received!")
+        return infos    
+    results = response.json()
+    remaining_allowed_call_for_current_hour = response.headers["X-RateLimit-Remaining"]
+    next_call_count_reset = datetime.datetime.fromtimestamp(int(response.headers["X-RateLimit-Reset"]))
+    infos["LIMIT"] = f"{remaining_allowed_call_for_current_hour} call(s) can still be performed in the current hours (reseted at {next_call_count_reset})."
+    for entry in results:
+        entry_url = entry["url"]
+        infos["DATA"].append(f"Entry: {entry_url}")
+    return infos
 
 
 if __name__ == "__main__":
@@ -720,7 +740,7 @@ if __name__ == "__main__":
             print_infos(informations, "  ")
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))     
-    print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses and the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
+    print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses or the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "virustotal" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["virustotal"]
         global_informations = get_virus_total_report_infos(args.domain_name, ips, api_key, http_proxy_to_use)
@@ -734,20 +754,19 @@ if __name__ == "__main__":
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_certificate_transparency_log_subdomains(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")
-    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses and the domain...", "blue", attrs=["bold"]))     
+    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses or the domain in their content...", "blue", attrs=["bold"]))     
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_github_repositories(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")    
-    print(colored(f"Special search without the TLD for the domain", "yellow", attrs=["bold"]))
     domain_no_tld = get_domain_without_tld(args.domain_name)
-    print(colored(f"  {domain_no_tld}", "yellow", attrs=["bold"]))
+    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
     informations = get_github_repositories(domain_no_tld, http_proxy_to_use)
     print_infos(informations, "    ") 
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))   
         informations = get_github_repositories(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(f"[INTELX] Check if the site have information about the IP addresses and the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[INTELX] Check if the site contain information about the IP addresses or the domain...", "blue", attrs=["bold"]))
     print(colored("[i]","green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
     if "intelx" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["intelx"]
@@ -768,6 +787,35 @@ if __name__ == "__main__":
         print_infos(infos_for_domain, "  ")                     
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
+    print(colored(f"[SOFTWAREHERITAGE] Check if the archive contain source code repositories with references to the IP addresses or the domain in their name (can take a while)...", "blue", attrs=["bold"]))
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_softwareheritage_infos(args.domain_name, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
+    # Revert the domain as it used for package name in technology like java, .net, etc
+    # test.com => com.test
+    # a.test.com => com.test.a
+    parts = args.domain_name.split(".")
+    parts.reverse()
+    domain_as_package_name = ".".join(parts)
+    print(colored(f"{domain_as_package_name}", "yellow", attrs=["bold"]))
+    informations = get_softwareheritage_infos(domain_as_package_name, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
+    # Perform a search with only the domain name without the TLD
+    # test.com => test
+    # a.test.com => a.test
+    parts = args.domain_name.split(".")
+    term = ".".join(parts[:-1])
+    print(colored(f"{term}", "yellow", attrs=["bold"]))
+    informations = get_softwareheritage_infos(term, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
+    # Apply search on IPs    
+    for ip in ips:
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))   
+        informations = get_softwareheritage_infos(ip, http_proxy_to_use)
+        print_infos(informations["DATA"], "  ") 
+    print(colored("[i]","green") + f" {informations['LIMIT']}")     
+    print(colored("[i]","green") + f" Use the following URL pattern to browse the archived data:")
+    print("    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]")       
     delay = round(time.time() - start_time, 2)      
     print("")     
     print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")
