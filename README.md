@@ -61,8 +61,7 @@ $ python --version
 Python 3.7.5
 
 $ python wpr.py --help
-usage: wpr.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] 
-                                [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
+usage: wpr.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
 
 optional arguments:
   -h, --help      Show this help message and exit
@@ -90,11 +89,9 @@ $ python wpr.py -d righettod.eu -a api_keys.ini
 $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ...
 
-$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
-                                  -p http://5.196.132.126:3128
+$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
 ...
 
-$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 \
-                                  -p http://5.196.132.126:3128 -s
+$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
 ...
 ```
