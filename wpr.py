@@ -18,6 +18,7 @@ import datetime
 import json
 import os
 import tldextract
+import git
 import urllib.parse
 from termcolor import colored
 from dns.resolver import NoAnswer
@@ -572,6 +573,16 @@ def get_softwareheritage_infos(domain_or_ip, http_proxy):
     return infos
 
 
+def get_wpr_version():
+    repo = git.Repo(search_parent_directories=False)
+    sha = repo.head.object.hexsha
+    if sha is None or len(sha.strip(" ")) == 0:
+        sha = "NA"
+    else:
+        sha = sha[0:7]
+    return sha
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -587,9 +598,12 @@ if __name__ == "__main__":
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
     http_proxy_to_use = args.http_proxy
-    print(colored(f"##############################################", "white", attrs=["bold"]))
-    print(colored(f"### TARGET: {args.domain_name.upper()}", "white", attrs=["bold"]))
-    print(colored(f"##############################################", "white", attrs=["bold"]))
+    wpr_version = get_wpr_version()
+    print(colored( "####################################################", "blue", attrs=["bold"]))
+    print(colored( "### WEB PASSIVE RECONNAISSANCE", "blue", attrs=["bold"]))
+    print(colored(f"### COMMIT VERSION : {wpr_version}", "blue", attrs=["bold"]))
+    print(colored(f"### TARGET DOMAIN  : {args.domain_name.upper()}", "blue", attrs=["bold"]))
+    print(colored(f"####################################################", "blue", attrs=["bold"]))
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)        
         api_keys_names = " / ".join(api_key_config["API_KEYS"].keys())
