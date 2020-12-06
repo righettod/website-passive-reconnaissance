@@ -183,12 +183,9 @@ def extract_infos_from_virus_total_response(http_response):
     return infos
 
 
-def get_domain_without_tld(domain):
+def get_main_domain_without_tld(domain):
     domain_infos = tldextract.extract(domain)
-    domain_no_tld = f"{domain_infos.domain}"
-    if len(domain_infos.subdomain) > 0:
-        domain_no_tld = f"{domain_infos.subdomain}.{domain_infos.domain}"
-    return domain_no_tld
+    return domain_infos.domain
 
 
 def configure_proxy(http_proxy):
@@ -571,8 +568,7 @@ def get_softwareheritage_infos(domain_or_ip, http_proxy):
     next_call_count_reset = datetime.datetime.fromtimestamp(int(response.headers["X-RateLimit-Reset"]))
     infos["LIMIT"] = f"{remaining_allowed_call_for_current_hour} call(s) can still be performed in the current hours (reseted at {next_call_count_reset})."
     for entry in results:
-        entry_url = entry["url"]
-        infos["DATA"].append(f"Entry: {entry_url}")
+        infos["DATA"].append(entry["url"])
     return infos
 
 
@@ -754,18 +750,6 @@ if __name__ == "__main__":
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_certificate_transparency_log_subdomains(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")
-    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses or the domain in their content...", "blue", attrs=["bold"]))     
-    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-    informations = get_github_repositories(args.domain_name, http_proxy_to_use)
-    print_infos(informations, "  ")    
-    domain_no_tld = get_domain_without_tld(args.domain_name)
-    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
-    informations = get_github_repositories(domain_no_tld, http_proxy_to_use)
-    print_infos(informations, "    ") 
-    for ip in ips:
-        print(colored(f"{ip}", "yellow", attrs=["bold"]))   
-        informations = get_github_repositories(ip, http_proxy_to_use)
-        print_infos(informations, "  ")
     print(colored(f"[INTELX] Check if the site contain information about the IP addresses or the domain...", "blue", attrs=["bold"]))
     print(colored("[i]","green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
     if "intelx" in api_key_config["API_KEYS"]:
@@ -787,28 +771,20 @@ if __name__ == "__main__":
         print_infos(infos_for_domain, "  ")                     
     else:
         print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
-    print(colored(f"[SOFTWAREHERITAGE] Check if the archive contain source code repositories with references to the IP addresses or the domain in their name (can take a while)...", "blue", attrs=["bold"]))
-    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-    informations = get_softwareheritage_infos(args.domain_name, http_proxy_to_use)
-    print_infos(informations["DATA"], "  ")
-    # Revert the domain as it used for package name in technology like java, .net, etc
-    # test.com => com.test
-    # a.test.com => com.test.a
-    parts = args.domain_name.split(".")
-    parts.reverse()
-    domain_as_package_name = ".".join(parts)
-    print(colored(f"{domain_as_package_name}", "yellow", attrs=["bold"]))
-    informations = get_softwareheritage_infos(domain_as_package_name, http_proxy_to_use)
-    print_infos(informations["DATA"], "  ")
-    # Perform a search with only the domain name without the TLD
-    # test.com => test
-    # a.test.com => a.test
-    parts = args.domain_name.split(".")
-    term = ".".join(parts[:-1])
-    print(colored(f"{term}", "yellow", attrs=["bold"]))
-    informations = get_softwareheritage_infos(term, http_proxy_to_use)
-    print_infos(informations["DATA"], "  ")
-    # Apply search on IPs    
+    print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses or the main domain in their content...", "blue", attrs=["bold"]))       
+    domain_no_tld = get_main_domain_without_tld(args.domain_name)
+    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
+    informations = get_github_repositories(domain_no_tld, http_proxy_to_use)
+    print_infos(informations, "  ") 
+    for ip in ips:
+        print(colored(f"{ip}", "yellow", attrs=["bold"]))   
+        informations = get_github_repositories(ip, http_proxy_to_use)
+        print_infos(informations, "  ")
+    print(colored(f"[SOFTWAREHERITAGE] Check if the archive contain source code repositories with references to the IP addresses or the main domain in their name (can take a while)...", "blue", attrs=["bold"]))
+    domain_no_tld = get_main_domain_without_tld(args.domain_name)
+    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
+    informations = get_softwareheritage_infos(domain_no_tld, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")    
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))   
         informations = get_softwareheritage_infos(ip, http_proxy_to_use)
