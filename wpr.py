@@ -574,13 +574,15 @@ def get_softwareheritage_infos(domain_or_ip, http_proxy):
 
 
 def get_wpr_version():
-    repo = git.Repo(search_parent_directories=False)
-    sha = repo.head.object.hexsha
-    if sha is None or len(sha.strip(" ")) == 0:
-        sha = "NA"
-    else:
-        sha = sha[0:7]
-    return sha
+    version = "NA"
+    try:
+        repo = git.Repo(search_parent_directories=False)
+        sha = repo.head.object.hexsha
+        if sha is not None and len(sha.strip(" ")) > 0:
+            version = sha[0:7]
+    except:
+        pass
+    return version
 
 
 if __name__ == "__main__":
