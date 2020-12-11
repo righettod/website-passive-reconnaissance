@@ -585,6 +585,11 @@ def get_wpr_version():
     return version
 
 
+def is_valid(domain):
+    parsed = urllib.parse.urlparse(domain)
+    return (len(parsed.scheme) == 0 and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0)
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -606,6 +611,10 @@ if __name__ == "__main__":
     print(colored(f"### COMMIT VERSION : {wpr_version}", "blue", attrs=["bold"]))
     print(colored(f"### TARGET DOMAIN  : {args.domain_name.upper()}", "blue", attrs=["bold"]))
     print(colored(f"####################################################", "blue", attrs=["bold"]))
+    if not is_valid(args.domain_name):
+        print(colored(f"A domain must be provided and not a URL!", "red", attrs=["bold"]))
+        print(colored(f".::Reconnaissance aborted::.", "red", attrs=["bold"]))
+        sys.exit(1)
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)        
         api_keys_names = " / ".join(api_key_config["API_KEYS"].keys())
