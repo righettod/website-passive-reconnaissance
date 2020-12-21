@@ -73,6 +73,8 @@ optional arguments:
                   (ex: http://88.198.50.103:9080).
   -s              Save the result of the Google/Bing Dork searching for interesting files 
                   to the file 'filetype_dork_result.txt'.
+  -t REQUEST_TIMEOUT  Delay in seconds allowed for a HTTP request to reply
+                      before to fall in timeout (ex: 20) - min is 5 seconds.
 
 required arguments:
   -d DOMAIN_NAME  Domain to analyse (ex: righettod.eu).
@@ -81,6 +83,9 @@ $ python wpr.py -d righettod.eu
 ...
 
 $ python wpr.py -d righettod.eu -n 8.8.8.8
+...
+
+$ python wpr.py -d righettod.eu -n 8.8.8.8 -t 30
 ...
 
 $ python wpr.py -d righettod.eu -a api_keys.ini

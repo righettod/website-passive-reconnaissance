@@ -20,4 +20,4 @@ jobs:
         pip install -r requirements.txt
     - name: Try an execution
       run: |        
-        python wpr.py -d righettod.eu -s -n 8.8.8.8
+        python wpr.py -d righettod.eu -s -n 8.8.8.8 -t 30
