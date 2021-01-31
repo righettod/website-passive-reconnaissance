@@ -100,3 +100,8 @@ $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.1
 $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
 ...
 ```
+
+# Demonstration
+
+[![asciicast](https://asciinema.org/a/388226.svg)](https://asciinema.org/a/388226)
+
