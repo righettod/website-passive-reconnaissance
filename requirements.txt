@@ -1,5 +1,5 @@
 tldextract==3.1.0
-tabulate==0.8.7
+tabulate==0.8.9
 colorama==0.4.4
 google==3.0.0
 requests==2.25.1
