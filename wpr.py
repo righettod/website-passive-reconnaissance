@@ -235,7 +235,10 @@ def print_infos(info_list, prefix=""):
 
 
 def print_infos_as_table(data):
-    print(tabulate(data, headers="firstrow", tablefmt="github", numalign="left", stralign="left"))
+    if len(data) == 1:
+        print(f"  No data found")
+    else:
+        print(tabulate(data, headers="firstrow", tablefmt="github", numalign="left", stralign="left"))
 
 
 def do_whois_request(ip, whois_server):
@@ -696,9 +699,6 @@ def get_leaks_infos(domain_or_ip, http_proxy):
         infos["ERROR"] = f"Error during web call: {str(e)}"
         infos["DATA"].clear()
     return infos
-
-
-
 
 
 if __name__ == "__main__":
