@@ -27,6 +27,8 @@ from dns.resolver import NXDOMAIN
 from requests.exceptions import ProxyError, RequestException
 from googlesearch import search
 from urllib.error import HTTPError
+from bs4 import BeautifulSoup
+from tabulate import tabulate
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"
@@ -230,6 +232,10 @@ def print_infos(info_list, prefix=""):
     else:        
         for info in info_list:
             print(f"{prefix}{info}")
+
+
+def print_infos_as_table(data):
+    print(tabulate(data, headers="firstrow", tablefmt="github", numalign="left", stralign="left"))
 
 
 def do_whois_request(ip, whois_server):
@@ -641,6 +647,60 @@ def is_valid(domain):
     return (len(parsed.scheme) == 0 and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0)
 
 
+def get_leaks_unprotected_email(protected_email):
+    # Reversed from the following JS:
+    # https://leaks.sh/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js
+    key = ""
+    mask = int(protected_email[0:2], 16)
+    index = 2
+    while index < len(protected_email):
+        i = int(protected_email[index:index+2], 16) ^ mask
+        key += chr(i)
+        index += 2
+    return key
+
+
+def get_leaks_infos(domain_or_ip, http_proxy):
+    try:
+        # As the site do not have a API yet then I parse the HTML...
+        # This function return structure to print a table because data here are better when printed as table
+        web_proxies = configure_proxy(http_proxy)
+        infos = {"DATA": [["Source", "Name", "Email", "Password", "PasswordHash"]], "ERROR": None}
+        # See https://leaks.sh/
+        service_url = f"https://leaks.sh/"
+        post_data = {"query": domain_or_ip}
+        # Set a extra long timeout (up to 5 minutes) because the response take a while to reply
+        response = requests.post(service_url, headers={"User-Agent": USER_AGENT}, data=post_data, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT*5)    
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        soup = BeautifulSoup(response.text, 'html.parser')
+        table = soup.find("table", attrs={"class": "dataTable table-hover css-serial"})
+        table_data = table.tbody.find_all("tr")
+        for row in table_data:
+            columns = row.find_all("td")
+            if len(columns) > 0:
+                data = []
+                for idx in range(1, 7):
+                    # Skip "Phone", "IP" and "Date of Birth (DOB)" to focus on mail data
+                    if idx == 4:
+                        continue
+                    col = columns[idx]
+                    if col.text == "[email\xa0protected]":
+                        data.append(get_leaks_unprotected_email(col.a.attrs["data-cfemail"]))
+                    else:
+                        data.append(col.text)
+                infos["DATA"].append(data)
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
+
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -869,9 +929,25 @@ if __name__ == "__main__":
         print(colored(f"{ip}", "yellow", attrs=["bold"]))   
         informations = get_softwareheritage_infos(ip, http_proxy_to_use)
         print_infos(informations["DATA"], "  ") 
-    print(colored("[i]","green") + f" {informations['LIMIT']}")     
-    print(colored("[i]","green") + f" Use the following URL pattern to browse the archived data:")
-    print("    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]")       
+    if informations['LIMIT'] != "NA":
+        print(colored("[i]","green") + f" {informations['LIMIT']}")     
+        print(colored("[i]","green") + f" Use the following URL pattern to browse the archived data:")
+        print("    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]") 
+    print(colored(f"[LEAKS.SH] Check the presence of leaks for the IP addresses or the main domain (can take a while)...", "blue", attrs=["bold"]))
+    domain_no_tld = get_main_domain_without_tld(args.domain_name)
+    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
+    informations = get_leaks_infos(domain_no_tld, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos_as_table(informations["DATA"])
+    for ip in ips:
+        print(colored(f"\n{ip}", "yellow", attrs=["bold"])) 
+        informations = get_leaks_infos(ip, http_proxy_to_use)
+        if informations["ERROR"] is not None:
+            print(f"  {informations['ERROR']}")
+        else:
+            print_infos_as_table(informations["DATA"])
     delay = round(time.time() - start_time, 2)      
     print("")     
     print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")

@@ -1,7 +1,9 @@
-google==3.0.0
-termcolor==1.1.0
-tldextract==3.1.0
+tldextract==3.0.2
+tabulate==0.8.7
 colorama==0.4.4
-requests==2.25.1
+google==3.0.0
+requests==2.25.0
+termcolor==1.1.0
+beautifulsoup4==4.9.3
 dnspython==2.1.0
 GitPython==3.1.14
