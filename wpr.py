@@ -604,7 +604,7 @@ def get_github_repositories(domain_or_ip, http_proxy):
 def get_softwareheritage_infos(domain_or_ip, http_proxy):
     try:
         web_proxies = configure_proxy(http_proxy)
-        infos = {"DATA": []}
+        infos = {"DATA": [], "LIMIT": "NA"}
         # See https://archive.softwareheritage.org/api
         service_url = f"https://archive.softwareheritage.org/api/1/origin/search/{domain_or_ip}/?limit=1000&with_visit=true"
         # Set a long timeout (up to 4 minutes) because the response take a while to reply
