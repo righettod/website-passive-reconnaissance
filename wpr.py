@@ -683,7 +683,7 @@ def get_leaks_infos(domain_or_ip, http_proxy):
             if len(columns) > 0:
                 data = []
                 for idx in range(1, 7):
-                    # Skip "Phone", "IP" and "Date of Birth (DOB)" to focus on mail data
+                    # Skip "Phone", "IP" and "Date of Birth (DOB)" to focus on main data
                     if idx == 4:
                         continue
                     col = columns[idx]
