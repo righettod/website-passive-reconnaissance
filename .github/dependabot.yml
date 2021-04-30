@@ -1,0 +1,13 @@
+version: 2
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "04:00"
+    timezone: Europe/Luxembourg
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: gitpython
+    versions:
+    - 3.1.14
