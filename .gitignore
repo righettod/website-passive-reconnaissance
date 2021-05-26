@@ -11,3 +11,4 @@ __pycache__/
 .google-cookie
 filetype_dork_result.txt
 test.py
+dnsdumpster.*

@@ -20,6 +20,7 @@ import os
 import tldextract
 import git
 import urllib.parse
+import base64
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
@@ -29,6 +30,7 @@ from googlesearch import search
 from urllib.error import HTTPError
 from bs4 import BeautifulSoup
 from tabulate import tabulate
+from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"
@@ -701,6 +703,34 @@ def get_leaks_infos(domain_or_ip, http_proxy):
     return infos
 
 
+def get_dns_dumpster_infos(domain, http_proxy):
+    infos = {"DATA": [], "XLS": None, "IMG": None, "ERROR": None}
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        results = DNSDumpsterAPI(session=req_session).search(domain)
+        data = results["dns_records"]
+        for entry in data["dns"]:
+            infos["DATA"].append(f"[DNS ]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
+        for entry in data["mx"]:
+            infos["DATA"].append(f"[MX  ]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
+        for entry in data["txt"]:
+            infos["DATA"].append(f"[TXT ]: {entry}")
+        for entry in data["host"]:
+            infos["DATA"].append(f"[HOST]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
+        infos["XLS"] = base64.b64decode(results["xls_data"])
+        infos["IMG"] = base64.b64decode(results["image_data"])
+        infos["DATA"].sort()
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+        infos["XLS"] = None
+        infos["IMG"] = None
+    return infos
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -948,6 +978,17 @@ if __name__ == "__main__":
             print(f"  {informations['ERROR']}")
         else:
             print_infos_as_table(informations["DATA"])
+    print(colored(f"[DNSDUMPSTER] Retrieve the cartography information about the domain and save the Excel/Image as 'dnsdumpster.(xlsx|png)' files...", "blue", attrs=["bold"]))
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_dns_dumpster_infos(args.domain_name, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos(informations["DATA"], prefix="  ")
+        with open("dnsdumpster.xlsx", "wb") as f:
+            f.write(informations["XLS"])
+        with open("dnsdumpster.png", "wb") as f:
+            f.write(informations["IMG"])
     delay = round(time.time() - start_time, 2)      
     print("")     
     print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")
