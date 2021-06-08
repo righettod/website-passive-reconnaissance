@@ -52,6 +52,8 @@ virustotal=xxx
 intelx=xxx
 ;See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
 azure-cognitive-services-bing-web-search=xxx
+;See https://buckets.grayhatwarfare.com/docs/api/v1
+grayhatwarfare=xxx 
 ```
 
 # Usage examples

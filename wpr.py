@@ -710,6 +710,7 @@ def get_dns_dumpster_infos(domain, http_proxy):
         req_session = requests.Session()
         req_session.headers.update({"User-Agent": USER_AGENT})
         req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
         results = DNSDumpsterAPI(session=req_session).search(domain)
         data = results["dns_records"]
         for entry in data["dns"]:
@@ -728,6 +729,46 @@ def get_dns_dumpster_infos(domain, http_proxy):
         infos["DATA"].clear()
         infos["XLS"] = None
         infos["IMG"] = None
+    return infos
+
+
+def get_grayhatwarfare_infos(domain, api_key, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    service_url_files = f"https://buckets.grayhatwarfare.com/api/v1/files/{domain}/2000?access_token={api_key}"
+    service_url_buckets = f"https://buckets.grayhatwarfare.com/api/v1/buckets/0/2000?keywords={domain}&access_token={api_key}"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        # Extract data for files
+        response = req_session.get(service_url_files)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received (files)!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if len(results["files"]) > 0:
+            for file in results["files"]:
+                infos["DATA"].append(f"[FILE  ]: {file['url']} ({file['size']} bytes)")
+        # Extract data for buckets
+        response = req_session.get(service_url_buckets)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received (buckets)!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if len(results["buckets"]) > 0:
+            for bucket in results["buckets"]:
+                if "container" in bucket:
+                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} in container {bucket['container']} ({bucket['fileCount']} files)")
+                else:
+                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} ({bucket['fileCount']} files)")
+        infos["DATA"].sort()
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
     return infos
 
 
@@ -989,6 +1030,18 @@ if __name__ == "__main__":
             f.write(informations["XLS"])
         with open("dnsdumpster.png", "wb") as f:
             f.write(informations["IMG"])
-    delay = round(time.time() - start_time, 2)      
+    print(colored(f"[GRAYHATWARFARE] Retrieve files in AWS/AZURE buckets with reference to the domain...", "blue", attrs=["bold"]))
+    if "grayhatwarfare" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["grayhatwarfare"]
+        domain_no_tld = get_main_domain_without_tld(args.domain_name)
+        print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
+        informations = get_grayhatwarfare_infos(domain_no_tld, api_key, http_proxy_to_use)
+        if informations["ERROR"] is not None:
+            print(f"  {informations['ERROR']}")
+        else:
+            print_infos(informations["DATA"], prefix="  ")
+    else:
+        print(colored(f"Skipped because no API key was specified!","red", attrs=["bold"]))
+    delay = round(time.time() - start_time, 2)
     print("")     
     print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")
