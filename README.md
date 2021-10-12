@@ -51,6 +51,7 @@ virustotal=xxx
 ;See https://intelx.io/
 intelx=xxx
 ;See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
+;See https://docs.microsoft.com/en-us/answers/questions/62385/please-help-me-to-find-the-process-to-get-ampampam.html
 azure-cognitive-services-bing-web-search=xxx
 ;See https://buckets.grayhatwarfare.com/docs/api/v1
 grayhatwarfare=xxx 
