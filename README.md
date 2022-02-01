@@ -2,7 +2,7 @@
 
 # Objectives
 
-Script to automate, when possible, the **passive reconnaissance** performed on a website prior to an assessment (no direct hit on the target). 
+Script to automate, when possible, the **passive reconnaissance** performed on a website prior to an assessment (no direct hit on the target).
 
 Also used to guide a reconnaissance phase by defining all steps (manual or automated) that must be mandatory performed.
 
@@ -15,7 +15,14 @@ Python >= 3.7
 Use the following command:
 
 ```bash
-$ pip install -r requirements.txt
+pip install -r requirements.txt
+```
+
+⚠️ Due to a [bug](https://github.com/PaulSec/API-dnsdumpster.com/pull/32) in the version **0.8** of the module [dnsdumpster](https://github.com/PaulSec/API-dnsdumpster.com), then, until the [version in pypi](https://pypi.org/project/dnsdumpster/) is the **0.8** then install the module using the following collection of command lines:
+
+```bash
+pip uninstall --yes dnsdumpster
+pip install https://github.com/PaulSec/API-dnsdumpster.com/archive/master.zip
 ```
 
 # Update of the "requirements.txt" file
@@ -23,7 +30,7 @@ $ pip install -r requirements.txt
 Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
 
 ```bash
-$ pipreqs --force .
+pipreqs --force .
 ```
 
 # Update TLD list caching of the module "tldextract"
@@ -31,7 +38,7 @@ $ pipreqs --force .
 Use the following command from [here](https://github.com/john-kurkowski/tldextract#note-about-caching):
 
 ```bash
-$ tldextract --update
+tldextract --update
 ```
 
 # API keys file
@@ -107,4 +114,3 @@ $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.1
 # Demonstration
 
 [![asciicast](https://asciinema.org/a/388226.svg)](https://asciinema.org/a/388226)
-
