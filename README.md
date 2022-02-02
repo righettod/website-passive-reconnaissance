@@ -62,6 +62,8 @@ intelx=xxx
 azure-cognitive-services-bing-web-search=xxx
 ;See https://buckets.grayhatwarfare.com/docs/api/v1
 grayhatwarfare=xxx 
+;See https://www.wappalyzer.com/api
+wappalyzer=xxx
 ```
 
 # Usage examples

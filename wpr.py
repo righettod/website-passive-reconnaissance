@@ -33,9 +33,9 @@ from tabulate import tabulate
 from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:83.0) Gecko/20100101 Firefox/83.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0"
 DEFAULT_CALL_TIMEOUT = 60  # 1 minute
-
+WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
                                "xml", "back", "txt"]
@@ -835,6 +835,45 @@ def get_grayhatwarfare_infos(domain, api_key, http_proxy):
     return infos
 
 
+def get_wappalyzer_infos(domain, api_key, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See https://www.wappalyzer.com/docs/api/v2/basics/
+    # Use HTTPS by default and explicitly specify to leverage the cache to prevent as maximim a live scan
+    # Accept data with a age of maximum 6 month old
+    # See https://www.wappalyzer.com/docs/api/v2/lookup/#parameters
+    service_url = f"https://api.wappalyzer.com/v2/lookup/?urls=https://{domain}&live=false&recursive=false&denoise=true&max_age={WAPPALYZER_MAX_MONTHS_RESULT_OLD}&squash=true"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update(
+            {"User-Agent": USER_AGENT, "x-api-key": api_key})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        # Extract data for files
+        response = req_session.get(service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if len(results) > 0:
+            for result in results:
+                if len(result["technologies"]) > 0:
+                    for technology in result["technologies"]:
+                        tech_name = technology["name"]
+                        if len(technology["versions"]) > 0:
+                            tech_versions = ",".join(technology["versions"])
+                        else:
+                            tech_versions = "NA"
+                        infos["DATA"].append(
+                            f"'{tech_name}' version(s): {tech_versions}")
+        infos["DATA"].sort()
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -1163,6 +1202,20 @@ if __name__ == "__main__":
         print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
         informations = get_grayhatwarfare_infos(
             domain_no_tld, api_key, http_proxy_to_use)
+        if informations["ERROR"] is not None:
+            print(f"  {informations['ERROR']}")
+        else:
+            print_infos(informations["DATA"], prefix="  ")
+    else:
+        print(colored(f"Skipped because no API key was specified!",
+              "red", attrs=["bold"]))
+    print(colored(
+        f"[WAPPALYZER] Retrieve technologies used on the domain with a age of maximum {WAPPALYZER_MAX_MONTHS_RESULT_OLD} months old...", "blue", attrs=["bold"]))
+    if "wappalyzer" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["wappalyzer"]
+        print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+        informations = get_wappalyzer_infos(
+            args.domain_name, api_key, http_proxy_to_use)
         if informations["ERROR"] is not None:
             print(f"  {informations['ERROR']}")
         else:
