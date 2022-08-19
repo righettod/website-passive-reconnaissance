@@ -874,6 +874,37 @@ def get_wappalyzer_infos(domain, api_key, http_proxy):
     return infos
 
 
+def get_wayback_machine_infos(domain, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See https://archive.org/help/wayback_api.php
+    service_url = f"https://archive.org/wayback/available?url={domain}"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        # Extract data for files
+        response = req_session.get(service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if "closest" in results["archived_snapshots"]:
+            url = results["archived_snapshots"]["closest"]["url"]
+            last_scan_date = "N/A"
+            if "timestamp" in results["archived_snapshots"]["closest"]:
+                # Ex: 20220603141821
+                last_scan_date = datetime.datetime.strptime(results["archived_snapshots"]["closest"]["timestamp"], "%Y%m%d%H%M%S").strftime("%d/%m/%Y at %H:%M:%S")
+            infos["DATA"].append(f"URL to access to the history: {url}")
+            infos["DATA"].append(f"Most recent archived snapshot taken on {last_scan_date}.")
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -1071,10 +1102,13 @@ if __name__ == "__main__":
         print(colored(f"Skipped because no API key was specified!",
               "red", attrs=["bold"]))
     print(colored(
-        f"[WAYBACKMACHINE] Provide the URL for Internet Archive for the domain...", "blue", attrs=["bold"]))
-    print("Use the following URL from a browser:")
-    print(f"  https://web.archive.org/web/*/https://{args.domain_name}")
-    print(f"  https://web.archive.org/web/*/http://{args.domain_name}")
+        f"[WAYBACKMACHINE] Provide the URL for Internet Archive (Wayback Machine) for the domain...", "blue", attrs=["bold"]))
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_wayback_machine_infos(args.domain_name, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos(informations["DATA"], "  ")
     print(colored(
         f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
