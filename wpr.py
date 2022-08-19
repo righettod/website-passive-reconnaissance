@@ -718,44 +718,8 @@ def get_leaks_unprotected_email(protected_email):
 
 
 def get_leaks_infos(domain_or_ip, http_proxy):
-    try:
-        # As the site do not have a API yet then I parse the HTML...
-        # This function return structure to print a table because data here are better when printed as table
-        web_proxies = configure_proxy(http_proxy)
-        infos = {"DATA": [["Source", "Name", "Email",
-                           "Password", "PasswordHash"]], "ERROR": None}
-        # See https://leaks.sh/
-        service_url = f"https://leaks.sh/"
-        post_data = {"query": domain_or_ip}
-        # Set a extra long timeout (up to 5 minutes) because the response take a while to reply
-        response = requests.post(service_url, headers={"User-Agent": USER_AGENT}, data=post_data,
-                                 proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT*5)
-        if response.status_code != 200:
-            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
-            infos["DATA"].clear()
-            return infos
-        soup = BeautifulSoup(response.text, 'html.parser')
-        table = soup.find(
-            "table", attrs={"class": "dataTable table-hover css-serial"})
-        table_data = table.tbody.find_all("tr")
-        for row in table_data:
-            columns = row.find_all("td")
-            if len(columns) > 0:
-                data = []
-                for idx in range(1, 7):
-                    # Skip "Phone", "IP" and "Date of Birth (DOB)" to focus on main data
-                    if idx == 4:
-                        continue
-                    col = columns[idx]
-                    if col.text == "[email\xa0protected]":
-                        data.append(get_leaks_unprotected_email(
-                            col.a.attrs["data-cfemail"]))
-                    else:
-                        data.append(col.text)
-                infos["DATA"].append(data)
-    except Exception as e:
-        infos["ERROR"] = f"Error during web call: {str(e)}"
-        infos["DATA"].clear()
+    # FIXME:
+    infos = {"DATA": [], "ERROR": "Site is not available anymore - I need to find another provider!"}
     return infos
 
 
