@@ -351,7 +351,7 @@ def get_active_shared_hosts(ip, http_proxy):
         return [f"Error during web call: {str(e)}"]
 
 
-def get_passive_shared_hosts(ip, http_proxy):
+def get_passive_shared_hosts(ip, http_proxy, viewdns_api_key):
     try:
         web_proxies = configure_proxy(http_proxy)
         infos = []
@@ -369,20 +369,21 @@ def get_passive_shared_hosts(ip, http_proxy):
                     vhost = result["domain"].split(":")[0]
                     if vhost not in infos:
                         infos.append(vhost)
-        # See https://github.com/AlienVault-OTX/ApiV2
-        service_url = f"https://www.threatcrowd.org/searchApi/v2/ip/report/?ip={ip}"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
-        if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received from ThreatCrowd API !")
-        else:
-            results = response.json()
-            if "resolutions" in results:
-                for result in results["resolutions"]:
-                    vhost = result["domain"]
-                    if vhost not in infos:
-                        infos.append(vhost)
+        # See https://viewdns.info/api/
+        if viewdns_api_key is not None:
+            service_url = f"https://api.viewdns.info/reverseip/?host={ip}&apikey={viewdns_api_key}&output=json"
+            response = requests.get(service_url, headers={
+                                    "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+            if response.status_code != 200:
+                infos.append(
+                    f"HTTP response code {response.status_code} received from ViewDNS API !")
+            else:
+                results = response.json()
+                if "response" in results and "domains" in results["response"]:
+                    for result in results["response"]["domains"]:
+                        vhost = result["name"]
+                        if vhost not in infos:
+                            infos.append(vhost)
         return infos
     except RequestException as e:
         return [f"Error during web call: {str(e)}"]
@@ -902,49 +903,38 @@ if __name__ == "__main__":
     print(colored(f"####################################################",
           "blue", attrs=["bold"]))
     if not is_valid(args.domain_name):
-        print(colored(f"A domain must be provided and not a URL!",
-              "red", attrs=["bold"]))
+        print(colored(f"A domain must be provided and not a URL!", "red", attrs=["bold"]))
         print(colored(f".::Reconnaissance aborted::.", "red", attrs=["bold"]))
         sys.exit(1)
     if args.api_key_file is not None:
         api_key_config.read(args.api_key_file)
         api_keys_names = " / ".join(api_key_config["API_KEYS"].keys())
-        print(colored(
-            f"[CONF] API key file '{args.api_key_file}' loaded: {api_keys_names}.", "white", attrs=["bold"]))
+        print(colored(f"[CONF] API key file '{args.api_key_file}' loaded: {api_keys_names}.", "white", attrs=["bold"]))
     if args.name_server is not None:
-        print(colored(
-            f"[CONF] Name server '{args.name_server}' used for all DNS queries.", "white", attrs=["bold"]))
+        print(colored(f"[CONF] Name server '{args.name_server}' used for all DNS queries.", "white", attrs=["bold"]))
     else:
-        print(colored(
-            f"[CONF] System default name server used for all DNS queries.", "white", attrs=["bold"]))
+        print(colored(f"[CONF] System default name server used for all DNS queries.", "white", attrs=["bold"]))
     if args.request_timeout is not None and args.request_timeout > 1:
         DEFAULT_CALL_TIMEOUT = args.request_timeout
-    print(colored(
-        f"[CONF] Request reply timeout set to {DEFAULT_CALL_TIMEOUT} seconds.", "white", attrs=["bold"]))
+    print(colored(f"[CONF] Request reply timeout set to {DEFAULT_CALL_TIMEOUT} seconds.", "white", attrs=["bold"]))
     if http_proxy_to_use is not None:
-        print(colored(
-            f"[CONF] HTTP proxy '{http_proxy_to_use}' used for all HTTP requests.", "white", attrs=["bold"]))
+        print(colored(f"[CONF] HTTP proxy '{http_proxy_to_use}' used for all HTTP requests.", "white", attrs=["bold"]))
         if args.api_key_file is not None:
-            print(colored(
-                f"[WARNING] Be aware that your API keys will be visible by the specified proxy!", "yellow", attrs=["bold"]))
+            print(colored(f"[WARNING] Be aware that your API keys will be visible by the specified proxy!", "yellow", attrs=["bold"]))
         print("Test proxy connectivity...", end='')
         msg = test_proxy_connectivity(http_proxy_to_use)
         if msg.startswith("Succeed"):
             print(colored(msg, "green", attrs=[]))
         else:
             print(colored(msg, "red", attrs=[]))
-            print(colored(f".::Reconnaissance aborted::.",
-                  "red", attrs=["bold"]))
+            print(colored(f".::Reconnaissance aborted::.", "red", attrs=["bold"]))
             sys.exit(1)
     else:
-        print(colored(
-            f"[CONF] No HTTP proxy used for all HTTP requests.", "white", attrs=["bold"]))
-    print(colored(f"[DNS] Extract the IP V4/V6 addresses...",
-          "blue", attrs=["bold"]))
+        print(colored(f"[CONF] No HTTP proxy used for all HTTP requests.", "white", attrs=["bold"]))
+    print(colored(f"[DNS] Extract the IP V4/V6 addresses...", "blue", attrs=["bold"]))
     ips = get_ip_addresses(args.domain_name, args.name_server, ["A", "AAAA"])
     if not ips:
-        print(colored(
-            f".::Unable to resolve DNS - Reconnaissance aborted::.", "red", attrs=["bold"]))
+        print(colored(f".::Unable to resolve DNS - Reconnaissance aborted::.", "red", attrs=["bold"]))
         sys.exit(2)
     print_infos(ips)
     print(colored(f"[DNS] Extract the aliases...", "blue", attrs=["bold"]))
@@ -962,8 +952,7 @@ if __name__ == "__main__":
         api_key = api_key_config["API_KEYS"]["shodan"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
         print("  Search with filter using the API with a free tier API key is not allowed, so, use the following URL from a browser:")
-        print(
-            f"    https://www.shodan.io/search?query=hostname%3A{args.domain_name}")
+        print(f"    https://www.shodan.io/search?query=hostname%3A{args.domain_name}")
         is_single_ip = len(ips) < 2
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
@@ -973,10 +962,8 @@ if __name__ == "__main__":
             if not is_single_ip:
                 time.sleep(1)
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
-    print(colored(
-        f"[SHODAN] Extract the CPE/CVE information of the IP addresses...", "blue", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[SHODAN] Extract the CPE/CVE information of the IP addresses...", "blue", attrs=["bold"]))
     if "shodan" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["shodan"]
         is_single_ip = len(ips) < 2
@@ -989,10 +976,8 @@ if __name__ == "__main__":
             if not is_single_ip:
                 time.sleep(1)
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
-    print(colored(
-        f"[HACKERTARGET] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[HACKERTARGET] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         if ":" in ip:
@@ -1000,32 +985,30 @@ if __name__ == "__main__":
             continue
         informations = get_active_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
-    print(colored(
-        f"[THREATMINER+THREATCROWD] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
+    print(colored(f"[THREATMINER+VIEWDNS] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
+    viewdns_api_key = None
+    if "viewdns" in api_key_config["API_KEYS"]:
+        viewdns_api_key = api_key_config["API_KEYS"]["viewdns"]
+    if viewdns_api_key is None:
+        print(colored(f"ViewDNS skipped because no API key was specified!", "red", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_passive_shared_hosts(ip, http_proxy_to_use)
+        informations = get_passive_shared_hosts(ip, http_proxy_to_use, viewdns_api_key)
         print_infos(informations, "  ")
-    print(colored(
-        f"[NETCRAFT] Provide the URL to report for the IP addresses and the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[NETCRAFT] Provide the URL to report for the IP addresses and the domain...", "blue", attrs=["bold"]))
     print("No API provided and browser required, so, use the following URL from a browser:")
     print(f"  https://toolbar.netcraft.com/site_report?url={args.domain_name}")
     for ip in ips:
         print(f"  https://toolbar.netcraft.com/site_report?url={ip}")
-
-    print(colored(
-        f"[PASTEBIN via GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[PASTEBIN via GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
     dork = f"site:pastebin.com \"{args.domain_name}\""
-    print("Perform the following dork: " +
-          colored(f"{dork}", "yellow", attrs=["bold"]))
+    print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
     print_infos(informations, "  ")
-    print(colored(
-        f"[GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
     file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
     dork = f"site:{args.domain_name} filetype:{file_types}"
-    print("Perform the following dork: " +
-          colored(f"{dork}", "yellow", attrs=["bold"]))
+    print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
     print_infos(informations, "  ")
     if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
@@ -1033,26 +1016,22 @@ if __name__ == "__main__":
         with open(file_name, "a+") as f:
             f.write("\n")
             f.write("\n".join(informations[1:]))
-        print(colored("[i]", "green") + " " + str(len(informations) -
-              1) + f" results saved to '{file_name}' file.")
+        print(colored("[i]", "green") + " " + str(len(informations) - 1) + f" results saved to '{file_name}' file.")
     print(colored(f"[PASTEBIN via BING] Apply Bing Dork for the domain, get the 50 first records (max per page allowed by the API)...", "blue", attrs=["bold"]))
     if "azure-cognitive-services-bing-web-search" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["azure-cognitive-services-bing-web-search"]
         dork = f"site:pastebin.com \"{args.domain_name}\""
-        print("Perform the following dork: " +
-              colored(f"{dork}", "yellow", attrs=["bold"]))
+        print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
         informations = get_bing_dork_results(dork, api_key, http_proxy_to_use)
         print_infos(informations, "  ")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
     print(colored(
         f"[BING] Apply Bing Dork for the domain, get the 50 first records (max per page allowed by the API)...", "blue", attrs=["bold"]))
     if "azure-cognitive-services-bing-web-search" in api_key_config["API_KEYS"]:
         file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
         dork = f"site:{args.domain_name} AND (filetype:{file_types})"
-        print("Perform the following dork: " +
-              colored(f"{dork}", "yellow", attrs=["bold"]))
+        print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
         informations = get_bing_dork_results(dork, api_key, http_proxy_to_use)
         print_infos(informations, "  ")
         if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
@@ -1060,13 +1039,10 @@ if __name__ == "__main__":
             with open(file_name, "a+") as f:
                 f.write("\n")
                 f.write("\n".join(informations[1:]))
-            print(colored("[i]", "green") + " " + str(len(informations) -
-                  1) + f" results saved to '{file_name}' file.")
+            print(colored("[i]", "green") + " " + str(len(informations) - 1) + f" results saved to '{file_name}' file.")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
-    print(colored(
-        f"[WAYBACKMACHINE] Provide the URL for Internet Archive (Wayback Machine) for the domain...", "blue", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[WAYBACKMACHINE] Provide the URL for Internet Archive (Wayback Machine) for the domain...", "blue", attrs=["bold"]))
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_wayback_machine_infos(args.domain_name, http_proxy_to_use)
     if informations["ERROR"] is not None:

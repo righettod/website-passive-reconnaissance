@@ -64,6 +64,8 @@ azure-cognitive-services-bing-web-search=xxx
 grayhatwarfare=xxx 
 ;See https://www.wappalyzer.com/api
 wappalyzer=xxx
+;See https://viewdns.info/api/
+viewdns=xxx
 ```
 
 # Usage examples
