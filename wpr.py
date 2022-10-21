@@ -21,6 +21,7 @@ import tldextract
 import git
 import urllib.parse
 import base64
+import re
 from termcolor import colored
 from dns.resolver import NoAnswer
 from dns.resolver import NoNameservers
@@ -329,7 +330,7 @@ def get_cnames(domain, name_server):
     return cnames
 
 
-def get_active_shared_hosts(ip, http_proxy):
+def get_active_shared_hosts(ip, http_proxy, viewdns_api_key):
     try:
         web_proxies = configure_proxy(http_proxy)
         infos = []
@@ -346,12 +347,38 @@ def get_active_shared_hosts(ip, http_proxy):
         for vhost in vhosts.splitlines():
             if vhost != ip:
                 infos.append(vhost)
+        # See https://viewdns.info/api/
+        if viewdns_api_key is not None:
+            service_url = f"https://api.viewdns.info/reverseip/?host={ip}&apikey={viewdns_api_key}&output=json"
+            response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+            if response.status_code != 200:
+                infos.append(
+                    f"HTTP response code {response.status_code} received from ViewDNS API !")
+            else:
+                results = response.json()
+                if "response" in results and "domains" in results["response"]:
+                    for result in results["response"]["domains"]:
+                        vhost = result["name"]
+                        if vhost not in infos:
+                            infos.append(vhost)
+        else:
+            service_url = f"https://viewdns.info/reverseip/?host={ip}&t=1"
+            response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+            if response.status_code != 200:
+                infos.append(f"HTTP response code {response.status_code} received from ViewDNS site !")
+            else:
+                results = response.text
+                vhosts = re.findall(r'<td>([a-zA-Z0-9\-\.]+)<\/td>', results)
+                for vhost in vhosts:
+                    if "." in vhost and vhost not in infos:
+                        infos.append(vhost.strip(' \r\t\n'))
+        infos.sort()
         return infos
     except RequestException as e:
         return [f"Error during web call: {str(e)}"]
 
 
-def get_passive_shared_hosts(ip, http_proxy, viewdns_api_key):
+def get_passive_shared_hosts(ip, http_proxy):
     try:
         web_proxies = configure_proxy(http_proxy)
         infos = []
@@ -369,21 +396,7 @@ def get_passive_shared_hosts(ip, http_proxy, viewdns_api_key):
                     vhost = result["domain"].split(":")[0]
                     if vhost not in infos:
                         infos.append(vhost)
-        # See https://viewdns.info/api/
-        if viewdns_api_key is not None:
-            service_url = f"https://api.viewdns.info/reverseip/?host={ip}&apikey={viewdns_api_key}&output=json"
-            response = requests.get(service_url, headers={
-                                    "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
-            if response.status_code != 200:
-                infos.append(
-                    f"HTTP response code {response.status_code} received from ViewDNS API !")
-            else:
-                results = response.json()
-                if "response" in results and "domains" in results["response"]:
-                    for result in results["response"]["domains"]:
-                        vhost = result["name"]
-                        if vhost not in infos:
-                            infos.append(vhost)
+        infos.sort()
         return infos
     except RequestException as e:
         return [f"Error during web call: {str(e)}"]
@@ -977,23 +990,23 @@ if __name__ == "__main__":
                 time.sleep(1)
     else:
         print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
-    print(colored(f"[HACKERTARGET] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
+    print(colored(f"[HACKERTARGET+VIEWDNS] Extract current hosts shared by each IP address (active DNS)...", "blue", attrs=["bold"]))
+    viewdns_api_key = None
+    if "viewdns" in api_key_config["API_KEYS"]:
+        viewdns_api_key = api_key_config["API_KEYS"]["viewdns"]
+    if viewdns_api_key is None:
+        print(colored("[i]", "green") + " ViewDNS API key not specified so only free data was retrieved (first 1000 records).")
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         if ":" in ip:
             print_infos(["IPV6 not supported"], "  ")
             continue
-        informations = get_active_shared_hosts(ip, http_proxy_to_use)
+        informations = get_active_shared_hosts(ip, http_proxy_to_use, viewdns_api_key)
         print_infos(informations, "  ")
-    print(colored(f"[THREATMINER+VIEWDNS] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
-    viewdns_api_key = None
-    if "viewdns" in api_key_config["API_KEYS"]:
-        viewdns_api_key = api_key_config["API_KEYS"]["viewdns"]
-    if viewdns_api_key is None:
-        print(colored(f"ViewDNS skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[THREATMINER] Extract previous hosts shared by each IP address (passive DNS)...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_passive_shared_hosts(ip, http_proxy_to_use, viewdns_api_key)
+        informations = get_passive_shared_hosts(ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[NETCRAFT] Provide the URL to report for the IP addresses and the domain...", "blue", attrs=["bold"]))
     print("No API provided and browser required, so, use the following URL from a browser:")
