@@ -35,6 +35,7 @@ from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0"
+MOBILE_APP_STORE_COUNTRY_STORE_CODE = "LU"  # Luxembourg
 DEFAULT_CALL_TIMEOUT = 60  # 1 minute
 WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
@@ -718,22 +719,45 @@ def is_valid(domain):
     return (len(parsed.scheme) == 0 and len(parsed.params) == 0 and len(parsed.query) == 0 and len(parsed.fragment) == 0)
 
 
-def get_leaks_unprotected_email(protected_email):
-    # Reversed from the following JS:
-    # https://leaks.sh/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js
-    key = ""
-    mask = int(protected_email[0:2], 16)
-    index = 2
-    while index < len(protected_email):
-        i = int(protected_email[index:index+2], 16) ^ mask
-        key += chr(i)
-        index += 2
-    return key
-
-
-def get_leaks_infos(domain_or_ip, http_proxy):
-    # FIXME:
-    infos = {"DATA": [], "ERROR": "Site is not available anymore - I need to find another provider!"}
+def get_mobile_app_infos(domain, http_proxy):
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        infos = {"DATA": [], "ERROR": None}
+        domain_infos = tldextract.extract(domain)
+        base_domain = f"{domain_infos.domain}.{domain_infos.suffix}"
+        base_domain_name = f"{domain_infos.domain}"
+        # iOS platform
+        # See https://performance-partners.apple.com/search-api
+        # See https://stackoverflow.com/a/16903522
+        found = False
+        service_url = f"https://itunes.apple.com/search?term={base_domain_name}&entity=software&country={MOBILE_APP_STORE_COUNTRY_STORE_CODE}"
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        if response.status_code != 200:
+            infos["DATA"].append(f"HTTP response code {response.status_code} received!")
+            return infos
+        results = response.json()
+        for entry in results["results"]:
+            if "sellerUrl" in entry and base_domain.lower() in entry["sellerUrl"].lower():
+                infos["DATA"].append(f"iOS app found with TrackName '{entry['trackName']}' and BundleId '{entry['bundleId']}'.")
+                found = True
+        if not found:
+            infos["DATA"].append("No iOS app found.")
+        # Android platform
+        service_url = f"https://play.google.com/store/search?q={base_domain_name}&c=apps&hl=en&gl={MOBILE_APP_STORE_COUNTRY_STORE_CODE}"
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        if response.status_code != 200:
+            infos["DATA"].append(f"HTTP response code {response.status_code} received!")
+            return infos
+        results = response.text
+        android_bundle_regex = f"id=({domain_infos.suffix}\.{domain_infos.domain}\.[a-z0-9A-Z\.\-_]+)"
+        bundles = re.findall(android_bundle_regex, results)
+        for bundle in bundles:
+            infos["DATA"].append(f"Android app found with PackageId '{bundle}'.")
+        if len(bundles) == 0:
+            infos["DATA"].append("No Android app found.")
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
     return infos
 
 
@@ -901,20 +925,18 @@ if __name__ == "__main__":
                         help="Save the result of the Google/Bing Dork searching for interesting files to the file 'filetype_dork_result.txt'.", required=False)
     parser.add_argument("-t", action="store", dest="request_timeout", type=int, default=DEFAULT_CALL_TIMEOUT,
                         help="Delay in seconds allowed for a HTTP request to reply before to fall in timeout (ex: 20).", required=False)
+    parser.add_argument("-m", action="store", dest="mobile_app_store_country_code", default=MOBILE_APP_STORE_COUNTRY_STORE_CODE,
+                        help="Country code to define in which store mobile app will be searched (ex: LU).", required=False)
     args = parser.parse_args()
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
     http_proxy_to_use = args.http_proxy
     wpr_version = get_wpr_version()
-    print(colored("####################################################",
-          "blue", attrs=["bold"]))
+    print(colored("####################################################", "blue", attrs=["bold"]))
     print(colored("### WEB PASSIVE RECONNAISSANCE", "blue", attrs=["bold"]))
-    print(
-        colored(f"### COMMIT VERSION : {wpr_version}", "blue", attrs=["bold"]))
-    print(colored(
-        f"### TARGET DOMAIN  : {args.domain_name.upper()}", "blue", attrs=["bold"]))
-    print(colored(f"####################################################",
-          "blue", attrs=["bold"]))
+    print(colored(f"### COMMIT VERSION : {wpr_version}", "blue", attrs=["bold"]))
+    print(colored(f"### TARGET DOMAIN  : {args.domain_name.upper()}", "blue", attrs=["bold"]))
+    print(colored(f"####################################################", "blue", attrs=["bold"]))
     if not is_valid(args.domain_name):
         print(colored(f"A domain must be provided and not a URL!", "red", attrs=["bold"]))
         print(colored(f".::Reconnaissance aborted::.", "red", attrs=["bold"]))
@@ -944,6 +966,9 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         print(colored(f"[CONF] No HTTP proxy used for all HTTP requests.", "white", attrs=["bold"]))
+    if args.mobile_app_store_country_code != MOBILE_APP_STORE_COUNTRY_STORE_CODE:
+        MOBILE_APP_STORE_COUNTRY_STORE_CODE = args.mobile_app_store_country_code.upper()
+        print(colored(f"[CONF] App store for country code '{MOBILE_APP_STORE_COUNTRY_STORE_CODE}' used for mobile apps searches.", "white", attrs=["bold"]))
     print(colored(f"[DNS] Extract the IP V4/V6 addresses...", "blue", attrs=["bold"]))
     ips = get_ip_addresses(args.domain_name, args.name_server, ["A", "AAAA"])
     if not ips:
@@ -1062,8 +1087,7 @@ if __name__ == "__main__":
         print(f"  {informations['ERROR']}")
     else:
         print_infos(informations["DATA"], "  ")
-    print(colored(
-        f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
+    print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
         informations = get_qualys_sslscan_cached_infos(
@@ -1078,12 +1102,10 @@ if __name__ == "__main__":
         print_infos(informations, "  ")
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
-            informations = get_hybrid_analysis_report_infos(
-                f"host:%22{ip}%22", api_key, http_proxy_to_use)
+            informations = get_hybrid_analysis_report_infos(f"host:%22{ip}%22", api_key, http_proxy_to_use)
             print_infos(informations, "  ")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
     print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses or the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "virustotal" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["virustotal"]
@@ -1094,18 +1116,14 @@ if __name__ == "__main__":
             informations = global_informations[k]
             print_infos(informations, "  ")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
-    print(colored(
-        f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain...", "blue", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain...", "blue", attrs=["bold"]))
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_certificate_transparency_log_subdomains(
         args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")
-    print(colored(
-        f"[INTELX] Check if the site contain information about the IP addresses or the domain...", "blue", attrs=["bold"]))
-    print(colored("[i]", "green") +
-          " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
+    print(colored(f"[INTELX] Check if the site contain information about the IP addresses or the domain...", "blue", attrs=["bold"]))
+    print(colored("[i]", "green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
     if "intelx" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["intelx"]
         infos_for_ip = {}
@@ -1148,26 +1166,8 @@ if __name__ == "__main__":
         print_infos(informations["DATA"], "  ")
     if informations['LIMIT'] != "NA":
         print(colored("[i]", "green") + f" {informations['LIMIT']}")
-        print(colored("[i]", "green") +
-              f" Use the following URL pattern to browse the archived data:")
-        print(
-            "    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]")
-    print(colored(
-        f"[LEAKS.SH] Check the presence of leaks for the IP addresses or the main domain (can take a while)...", "blue", attrs=["bold"]))
-    domain_no_tld = get_main_domain_without_tld(args.domain_name)
-    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
-    informations = get_leaks_infos(domain_no_tld, http_proxy_to_use)
-    if informations["ERROR"] is not None:
-        print(f"  {informations['ERROR']}")
-    else:
-        print_infos_as_table(informations["DATA"])
-    for ip in ips:
-        print(colored(f"\n{ip}", "yellow", attrs=["bold"]))
-        informations = get_leaks_infos(ip, http_proxy_to_use)
-        if informations["ERROR"] is not None:
-            print(f"  {informations['ERROR']}")
-        else:
-            print_infos_as_table(informations["DATA"])
+        print(colored("[i]", "green") + f" Use the following URL pattern to browse the archived data:")
+        print("    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]")
     print(colored(f"[DNSDUMPSTER] Retrieve the cartography information about the domain and save the Excel/Image as 'dnsdumpster.(xlsx|png)' files...", "blue", attrs=["bold"]))
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_dns_dumpster_infos(args.domain_name, http_proxy_to_use)
@@ -1181,8 +1181,7 @@ if __name__ == "__main__":
         if informations["IMG"] is not None:
             with open("dnsdumpster.png", "wb") as f:
                 f.write(informations["IMG"])
-    print(colored(
-        f"[GRAYHATWARFARE] Retrieve files in AWS/AZURE buckets with reference to the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[GRAYHATWARFARE] Retrieve files in AWS/AZURE buckets with reference to the domain...", "blue", attrs=["bold"]))
     if "grayhatwarfare" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["grayhatwarfare"]
         domain_no_tld = get_main_domain_without_tld(args.domain_name)
@@ -1196,8 +1195,7 @@ if __name__ == "__main__":
     else:
         print(colored(f"Skipped because no API key was specified!",
               "red", attrs=["bold"]))
-    print(colored(
-        f"[WAPPALYZER] Retrieve technologies used on the domain with a age of maximum {WAPPALYZER_MAX_MONTHS_RESULT_OLD} months old...", "blue", attrs=["bold"]))
+    print(colored(f"[WAPPALYZER] Retrieve technologies used on the domain with a age of maximum {WAPPALYZER_MAX_MONTHS_RESULT_OLD} months old...", "blue", attrs=["bold"]))
     if "wappalyzer" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["wappalyzer"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
@@ -1208,8 +1206,16 @@ if __name__ == "__main__":
         else:
             print_infos(informations["DATA"], prefix="  ")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
+    print(colored(f"[GOOGLE PLAY + APPLE APP STORE] Verify if the company provide mobile apps on official stores...", "blue", attrs=["bold"]))
+    print(colored("[i]", "green") + f" Searches were performed into application stores for the country code '{MOBILE_APP_STORE_COUNTRY_STORE_CODE}'.")
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_mobile_app_infos(args.domain_name, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos(informations["DATA"], prefix="  ")
+
     delay = round(time.time() - start_time, 2)
     print("")
     print(

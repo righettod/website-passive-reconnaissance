@@ -89,6 +89,8 @@ optional arguments:
                   to the file 'filetype_dork_result.txt'.
   -t REQUEST_TIMEOUT  Delay in seconds allowed for a HTTP request to reply
                       before to fall in timeout (ex: 20) - min is 5 seconds.
+ -m MOBILE_APP_STORE_COUNTRY_CODE
+                      Country code to define in which store mobile app will be searched (ex: LU).                      
 
 required arguments:
   -d DOMAIN_NAME  Domain to analyse (ex: righettod.eu).
@@ -97,6 +99,9 @@ $ python wpr.py -d righettod.eu
 ...
 
 $ python wpr.py -d righettod.eu -n 8.8.8.8
+...
+
+$ python wpr.py -d righettod.eu -n 8.8.8.8 -m FR
 ...
 
 $ python wpr.py -d righettod.eu -n 8.8.8.8 -t 30
