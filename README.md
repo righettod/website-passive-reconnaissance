@@ -12,7 +12,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 
 Python >= **3.7**.
 
-💬 Execution tested on the following versions of Python:
+💬 Execution tested on the following versions of Python via this [workflow](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml):
 
 | Version | Tested and execution is OK |
 |:---:|---|
