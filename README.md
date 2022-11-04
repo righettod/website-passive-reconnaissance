@@ -10,7 +10,17 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 
 # Requirements
 
-Python >= 3.7
+Python >= **3.7**.
+
+💬 Execution tested on the following versions of Python:
+
+| Version | Tested and execution is OK |
+|:---:|---|
+| < 3.7 | ❌ |
+| 3.7 | ✅ |
+| 3.9 | ✅ |
+| 3.10 | ✅ |
+| 3.11 | ✅ |
 
 # Installation of dependencies
 
