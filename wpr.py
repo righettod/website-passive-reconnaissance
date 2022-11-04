@@ -50,10 +50,8 @@ def get_bing_dork_results(dork, api_key, http_proxy):
         # See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
         # For API key including trial one
         search_url = "https://api.cognitive.microsoft.com/bing/v7.0/search"
-        request_headers = {
-            "Ocp-Apim-Subscription-Key": api_key, "User-Agent": USER_AGENT}
-        params = {"q": dork, "textFormat": "HTML",
-                  "count": 50, "safeSearch": "Off"}
+        request_headers = {"Ocp-Apim-Subscription-Key": api_key, "User-Agent": USER_AGENT}
+        params = {"q": dork, "textFormat": "HTML", "count": 50, "safeSearch": "Off"}
         response = requests.get(search_url, params=params, headers=request_headers, proxies=web_proxies, verify=(
             http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code == 200:
@@ -67,8 +65,7 @@ def get_bing_dork_results(dork, api_key, http_proxy):
         else:
             url_encoded_dork = urllib.parse.quote(dork)
             infos.clear()
-            infos.append(
-                f"Bing respond 'HTTP Error {response.status_code}: {response.reason}' => Check your API key or use the Dork in a browser using the following url:")
+            infos.append(f"Bing respond 'HTTP Error {response.status_code}: {response.reason}' => Check your API key or use the Dork in a browser using the following url:")
             infos.append(f"https://www.bing.com/search?q={url_encoded_dork}")
         return infos
     except RequestException as e:
@@ -98,10 +95,8 @@ def get_google_dork_results(dork, http_proxy):
             if err.code == 429:
                 url_encoded_dork = urllib.parse.quote(dork)
                 infos.clear()
-                infos.append(
-                    "Google respond 'HTTP Error 429: Too Many Requests' => Use another IP address or use the Dork in a browser using the following url:")
-                infos.append(
-                    f"https://www.google.com/search?q={url_encoded_dork}")
+                infos.append("Google respond 'HTTP Error 429: Too Many Requests' => Use another IP address or use the Dork in a browser using the following url:")
+                infos.append(f"https://www.google.com/search?q={url_encoded_dork}")
             else:
                 raise
         return infos
@@ -134,8 +129,7 @@ def get_intelx_infos(ip_or_domain, api_key, http_proxy):
         response = requests.post(service_url, data=json.dumps(payload), headers=request_headers,
                                  proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received for the search!")
+            infos.append(f"HTTP response code {response.status_code} received for the search!")
             return infos
         # Then get the result for the search
         search_id = str(response.json()["id"])
@@ -144,8 +138,7 @@ def get_intelx_infos(ip_or_domain, api_key, http_proxy):
             http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         # Count result by bucket
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received for the result of the search!")
+            infos.append(f"HTTP response code {response.status_code} received for the result of the search!")
             return infos
         data = response.json()
         buckets = {}
@@ -164,8 +157,7 @@ def get_intelx_infos(ip_or_domain, api_key, http_proxy):
                     buckets[bucket_name.lower()] += 1
         # Add the information
         for bucket_name in buckets:
-            infos.append(
-                f"{buckets[bucket_name]} records for bucket {bucket_name}")
+            infos.append(f"{buckets[bucket_name]} records for bucket {bucket_name}")
         for paste in pasties:
             infos.append(f"Paste '{paste}' added on {pasties[paste]}")
         return infos
@@ -208,14 +200,10 @@ def extract_infos_from_virus_total_response(http_response):
                 if "undetected_downloaded_samples" in results:
                     samples_undetected_download_count = len(
                         results["undetected_downloaded_samples"])
-                infos.append(
-                    f"URLs at this IP address that have at least one detection on a URL scan = {urls_detected_count}")
-                infos.append(
-                    f"URLs at this IP address with no detections on a URL scan = {urls_undetected_count}")
-                infos.append(
-                    f"Files that have been downloaded from this IP address with at least one AV detection = {samples_detected_download_count}")
-                infos.append(
-                    f"Files that have been downloaded from this IP address with zero AV detections = {samples_undetected_download_count}")
+                infos.append(f"URLs at this IP address that have at least one detection on a URL scan = {urls_detected_count}")
+                infos.append(f"URLs at this IP address with no detections on a URL scan = {urls_undetected_count}")
+                infos.append(f"Files that have been downloaded from this IP address with at least one AV detection = {samples_detected_download_count}")
+                infos.append(f"Files that have been downloaded from this IP address with zero AV detections = {samples_undetected_download_count}")
             elif rc == -2:
                 infos.append(f"Pending analysis for this item.")
         return infos
@@ -241,8 +229,7 @@ def test_proxy_connectivity(http_proxy):
     try:
         web_proxies = {"http": http_proxy, "https": http_proxy}
         service_url = "https://perdu.com/"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code == 200:
             msg = "Succeed"
         else:
@@ -264,8 +251,7 @@ def print_infos_as_table(data):
     if len(data) == 1:
         print(f"  No data found")
     else:
-        print(tabulate(data, headers="firstrow",
-              tablefmt="github", numalign="left", stralign="left"))
+        print(tabulate(data, headers="firstrow", tablefmt="github", numalign="left", stralign="left"))
 
 
 def do_whois_request(ip, whois_server):
@@ -338,11 +324,9 @@ def get_active_shared_hosts(ip, http_proxy, viewdns_api_key):
         # HackerTarget API is limited of 50 queries per day
         # See https://hackertarget.com/ip-tools/
         service_url = f"https://api.hackertarget.com/reverseiplookup/?q={ip}"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received!")
+            infos.append(f"HTTP response code {response.status_code} received!")
             return infos
         vhosts = response.text
         for vhost in vhosts.splitlines():
@@ -353,8 +337,7 @@ def get_active_shared_hosts(ip, http_proxy, viewdns_api_key):
             service_url = f"https://api.viewdns.info/reverseip/?host={ip}&apikey={viewdns_api_key}&output=json"
             response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
             if response.status_code != 200:
-                infos.append(
-                    f"HTTP response code {response.status_code} received from ViewDNS API !")
+                infos.append(f"HTTP response code {response.status_code} received from ViewDNS API !")
             else:
                 results = response.json()
                 if "response" in results and "domains" in results["response"]:
@@ -388,8 +371,7 @@ def get_passive_shared_hosts(ip, http_proxy):
         response = requests.get(service_url, headers={
                                 "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received from ThreatMiner API !")
+            infos.append(f"HTTP response code {response.status_code} received from ThreatMiner API !")
         else:
             results = response.json()
             if results["status_code"] == "200":
@@ -408,8 +390,7 @@ def get_ip_owner(ip, http_proxy):
         infos = []
         data = do_whois(ip)
         records = data.splitlines()
-        records_skip_prefix = ["Ref:", "OrgTech", "OrgAbuse", "OrgNOC",
-                               "tech-c", "admin-c", "remarks", "e-mail", "abuse", "Comment", "#", "%"]
+        records_skip_prefix = ["Ref:", "OrgTech", "OrgAbuse", "OrgNOC", "tech-c", "admin-c", "remarks", "e-mail", "abuse", "Comment", "#", "%"]
         for record in records:
             if len(record.strip()) == 0:
                 continue
@@ -431,11 +412,9 @@ def get_shodan_ip_infos(ip, api_key, http_proxy):
         infos = []
         # See https://developer.shodan.io/api
         service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&minify=true"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received!")
+            infos.append(f"HTTP response code {response.status_code} received!")
             return infos
         data = response.json()
         value = data["last_update"]
@@ -460,8 +439,7 @@ def get_shodan_cpe_cve_infos(ip, api_key, http_proxy):
         # See https://developer.shodan.io/api
         # Note: Historical IP lookups require a membership or API subscription
         service_url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}&history=false"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
             infos.append(
                 f"HTTP response code {response.status_code} received!")
@@ -517,11 +495,9 @@ def get_qualys_sslscan_cached_infos(domain, ip, http_proxy):
         infos = []
         # See https://github.com/ssllabs/ssllabs-scan/blob/master/ssllabs-api-docs-v3.md
         service_url = f"https://api.ssllabs.com/api/v3/getEndpointData?host={domain}&s={ip}&fromCache=on"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if "errors" not in response.text and "statusMessage" not in response.text:
-            infos.append(
-                f"HTTP response code {response.status_code} received!")
+            infos.append(f"HTTP response code {response.status_code} received!")
             return infos
         data = response.json()
         if "errors" in data:
@@ -572,11 +548,9 @@ def get_hybrid_analysis_report_infos(query, api_key, http_proxy):
         infos = []
         # See https://www.hybrid-analysis.com/docs/api/v2
         service_url = f"https://www.hybrid-analysis.com/api/search?query={query}"
-        response = requests.get(service_url, headers={"User-Agent": "Falcon", "api-key": api_key},
-                                proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": "Falcon", "api-key": api_key}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received!")
+            infos.append(f"HTTP response code {response.status_code} received!")
             return infos
         data = response.json()
         rc = data["response_code"]
@@ -604,8 +578,7 @@ def get_virus_total_report_infos(domain, ip_list, api_key, http_proxy):
         # Get info for the domain
         vt_call_count = 0
         service_url = f"https://www.virustotal.com/vtapi/v2/domain/report?apikey={api_key}&domain={domain}"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         vt_call_count += 1
         infos[domain] = extract_infos_from_virus_total_response(response)
         # Get info for the IPs
@@ -614,8 +587,7 @@ def get_virus_total_report_infos(domain, ip_list, api_key, http_proxy):
                 time.sleep(60)
                 vt_call_count = 0
             service_url = f"https://www.virustotal.com/vtapi/v2/ip-address/report?apikey={api_key}&ip={ip}"
-            response = requests.get(service_url, headers={
-                                    "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+            response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
             vt_call_count += 1
             infos[ip] = extract_infos_from_virus_total_response(response)
         return infos
@@ -634,8 +606,7 @@ def get_certificate_transparency_log_subdomains(domain, http_proxy):
         infos = []
         # See https://crt.sh
         service_url = f"https://crt.sh/?q=%.{domain}&output=json"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
             infos.append(
                 f"HTTP response code {response.status_code} received!")
@@ -657,11 +628,9 @@ def get_github_repositories(domain_or_ip, http_proxy):
         # See https://developer.github.com/v3/search/#search-repositories
         term = f"%22{domain_or_ip}%22"
         service_url = f"https://api.github.com/search/repositories?q=size:%3E0+{term}&sort=updated&order=desc"
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
-            infos.append(
-                f"HTTP response code {response.status_code} received!")
+            infos.append(f"HTTP response code {response.status_code} received!")
             return infos
         results = response.json()
         for repo in results["items"]:
@@ -683,8 +652,7 @@ def get_softwareheritage_infos(domain_or_ip, http_proxy):
         # See https://archive.softwareheritage.org/api
         service_url = f"https://archive.softwareheritage.org/api/1/origin/search/{domain_or_ip}/?limit=1000&with_visit=true"
         # Set a long timeout (up to 4 minutes) because the response take a while to reply
-        response = requests.get(service_url, headers={
-                                "User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
         if response.status_code != 200:
             infos["DATA"].append(
                 f"HTTP response code {response.status_code} received!")
@@ -813,8 +781,7 @@ def get_grayhatwarfare_infos(domain, api_key, http_proxy):
         results = response.json()
         if len(results["files"]) > 0:
             for file in results["files"]:
-                infos["DATA"].append(
-                    f"[FILE  ]: {file['url']} ({file['size']} bytes)")
+                infos["DATA"].append(f"[FILE  ]: {file['url']} ({file['size']} bytes)")
         # Extract data for buckets
         response = req_session.get(service_url_buckets)
         if response.status_code != 200:
@@ -825,11 +792,9 @@ def get_grayhatwarfare_infos(domain, api_key, http_proxy):
         if len(results["buckets"]) > 0:
             for bucket in results["buckets"]:
                 if "container" in bucket:
-                    infos["DATA"].append(
-                        f"[BUCKET]: {bucket['bucket']} in container {bucket['container']} ({bucket['fileCount']} files)")
+                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} in container {bucket['container']} ({bucket['fileCount']} files)")
                 else:
-                    infos["DATA"].append(
-                        f"[BUCKET]: {bucket['bucket']} ({bucket['fileCount']} files)")
+                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} ({bucket['fileCount']} files)")
         infos["DATA"].sort()
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
@@ -901,6 +866,34 @@ def get_wayback_machine_infos(domain, http_proxy):
                 last_scan_date = datetime.datetime.strptime(results["archived_snapshots"]["closest"]["timestamp"], "%Y%m%d%H%M%S").strftime("%d/%m/%Y at %H:%M:%S")
             infos["DATA"].append(f"URL to access to the history: {url}")
             infos["DATA"].append(f"Most recent archived snapshot taken on {last_scan_date}.")
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
+def get_pgp_users_infos(domain, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See https://openpgp.circl.lu
+    service_url = f"https://openpgp.circl.lu/pks/lookup?search={domain}&options=mr&op=index"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        response = req_session.get(service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.text
+        for entry in results.splitlines():
+            if entry.startswith("uid:"):
+                v = entry.split(":")[1]
+                if v not in infos["DATA"]:
+                    infos["DATA"].append(v)
+        infos["DATA"].sort()
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
         infos["DATA"].clear()
@@ -1215,7 +1208,12 @@ if __name__ == "__main__":
         print(f"  {informations['ERROR']}")
     else:
         print_infos(informations["DATA"], prefix="  ")
-
+    print(colored(f"[OPENPGP KEYSERVER CIRCL.LU] Extract user entries for email domain '{args.domain_name}' to obtain username patterns...", "blue", attrs=["bold"]))
+    informations = get_pgp_users_infos(args.domain_name, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos(informations["DATA"], prefix="  ")
     delay = round(time.time() - start_time, 2)
     print("")
     print(
