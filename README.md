@@ -135,4 +135,6 @@ $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.1
 
 # Demonstration
 
-[![asciicast](https://asciinema.org/a/388226.svg)](https://asciinema.org/a/388226)
+https://user-images.githubusercontent.com/1573775/203140192-bf75a1a6-cddd-4f7c-8da9-5e931e6a3f21.mp4
+
+
