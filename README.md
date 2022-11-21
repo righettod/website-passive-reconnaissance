@@ -2,13 +2,13 @@
 
 ![MadeWitVSCode](https://img.shields.io/static/v1?label=Made%20with&message=VisualStudio%20Code&color=blue&?style=for-the-badge&logo=visualstudio)  ![AutomatedWith](https://img.shields.io/static/v1?label=Automated%20with&message=GitHub%20Actions&color=blue&?style=for-the-badge&logo=github) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=Snyk&color=blueviolet&?style=for-the-badge&logo=snyk) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=GitHub%20CodeQL&color=blue&?style=for-the-badge&logo=github)
 
-# Objectives
+# 🎯 Objectives
 
 Script to automate, when possible, the **[passive reconnaissance](https://www.codecademy.com/article/passive-active-reconnaissance)** performed on a website prior to an assessment (no direct hit on the target).
 
 Also used to guide a reconnaissance phase by defining all steps (manual or automated) that must be mandatory performed.
 
-# Requirements
+# 📦 Requirements
 
 Python >= **3.7**.
 
@@ -23,7 +23,7 @@ Python >= **3.7**.
 | 3.10 | ✅ |
 | 3.11 | ✅ |
 
-# Installation of dependencies
+# 💻 Installation of dependencies
 
 Use the following command:
 
@@ -38,7 +38,7 @@ pip uninstall --yes dnsdumpster
 pip install https://github.com/PaulSec/API-dnsdumpster.com/archive/master.zip
 ```
 
-# Update of the "requirements.txt" file
+# 📡 Update of the "requirements.txt" file
 
 Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
 
@@ -46,7 +46,7 @@ Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
 pipreqs --force .
 ```
 
-# Update TLD list caching of the module "tldextract"
+# 📡 Update TLD list caching of the module "tldextract"
 
 Use the following command from [here](https://github.com/john-kurkowski/tldextract#note-about-caching):
 
@@ -54,7 +54,7 @@ Use the following command from [here](https://github.com/john-kurkowski/tldextra
 tldextract --update
 ```
 
-# API keys file
+# 🔑 API keys file
 
 > The script assume that an API key binded to the free version of the API is used of each service.
 
@@ -81,7 +81,7 @@ wappalyzer=xxx
 viewdns=xxx
 ```
 
-# Usage examples
+# 👩‍💻 Usage examples
 
 ```bash
 $ python --version
@@ -133,7 +133,7 @@ $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.1
 ...
 ```
 
-# Demonstration
+# 📺 Demonstration
 
 https://user-images.githubusercontent.com/1573775/203140192-bf75a1a6-cddd-4f7c-8da9-5e931e6a3f21.mp4
 
