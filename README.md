@@ -56,7 +56,7 @@ tldextract --update
 
 # 🔑 API keys file
 
-> The script assume that an API key binded to the free version of the API is used of each service.
+> **Note**: The script assume that an API key binded to the free version of the API is used of each service.
 
 API keys are expected to be provided within an **INI** file having the following structure:
 
