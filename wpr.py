@@ -34,7 +34,7 @@ from tabulate import tabulate
 from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:96.0) Gecko/20100101 Firefox/96.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0"
 MOBILE_APP_STORE_COUNTRY_STORE_CODE = "LU"  # Luxembourg
 DEFAULT_CALL_TIMEOUT = 60  # 1 minute
 WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
@@ -751,8 +751,10 @@ def get_dns_dumpster_infos(domain, http_proxy):
             for entry in data["host"]:
                 infos["DATA"].append(
                     f"[HOST]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
-            infos["XLS"] = base64.b64decode(results["xls_data"])
-            infos["IMG"] = base64.b64decode(results["image_data"])
+            if results["xls_data"] != None:
+                infos["XLS"] = base64.b64decode(results["xls_data"])
+            if results["image_data"] != None:
+                infos["IMG"] = base64.b64decode(results["image_data"])
             infos["DATA"].sort()
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
