@@ -41,6 +41,8 @@ WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
                                "xml", "back", "txt"]
+# See issue https://github.com/righettod/website-passive-reconnaissance/issues/89
+RCE_PRONE_PARAMETERS_DORK = "inurl:cmd | inurl:exec= | inurl:query= | inurl:code= | inurl:do= | inurl:run= | inurl:read= | inurl:ping= inurl:& site:%s"
 
 
 def get_bing_dork_results(dork, api_key, http_proxy):
@@ -1038,14 +1040,24 @@ if __name__ == "__main__":
     print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
     print_infos(informations, "  ")
-    print(colored(f"[GOOGLE] Apply Google Dork for the domain...", "blue", attrs=["bold"]))
+    print(colored(f"[GOOGLE] Apply several Google Dorks for the domain...", "blue", attrs=["bold"]))
     file_types = " OR filetype:".join(INTERESTING_FILE_EXTENSIONS)
     dork = f"site:{args.domain_name} filetype:{file_types}"
     print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
     informations = get_google_dork_results(dork, http_proxy_to_use)
     print_infos(informations, "  ")
     if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
-        file_name = "filetype_dork_result.txt"
+        file_name = "filetype_dork_result1.txt"
+        with open(file_name, "a+") as f:
+            f.write("\n")
+            f.write("\n".join(informations[1:]))
+        print(colored("[i]", "green") + " " + str(len(informations) - 1) + f" results saved to '{file_name}' file.")
+    dork = RCE_PRONE_PARAMETERS_DORK % args.domain_name
+    print("Perform the following dork: " + colored(f"{dork}", "yellow", attrs=["bold"]))
+    informations = get_google_dork_results(dork, http_proxy_to_use)
+    print_infos(informations, "  ")
+    if args.store_filetype_dork_result and informations != None and len(informations) > 0 and "HTTP Error" not in informations[0]:
+        file_name = "filetype_dork_result2.txt"
         with open(file_name, "a+") as f:
             f.write("\n")
             f.write("\n".join(informations[1:]))
