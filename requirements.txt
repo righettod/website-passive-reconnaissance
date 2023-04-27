@@ -1,5 +1,5 @@
 colorama==0.4.6
-tldextract==3.4.0
+tldextract==3.4.1
 google==3.0.0
 requests==2.29.0
 termcolor==2.2.0
