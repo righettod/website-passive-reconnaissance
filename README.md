@@ -10,7 +10,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 
 # 📦 Requirements
 
-Python >= **3.7**.
+Python >= **3.8**.
 
 💬 Execution tested on the following 64 bits versions of Python via this [workflow](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml):
 
