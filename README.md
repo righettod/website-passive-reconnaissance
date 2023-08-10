@@ -16,8 +16,7 @@ Python >= **3.7**.
 
 | Version | Supported? |
 |:---:|---|
-| < 3.7 | ❌ |
-| 3.7 | ✅ |
+| < 3.8 | ❌ |
 | 3.8 | ✅ |
 | 3.9 | ✅ |
 | 3.10 | ✅ |
@@ -84,9 +83,6 @@ viewdns=xxx
 # 👩‍💻 Usage examples
 
 ```bash
-$ python --version
-Python 3.7.5
-
 $ python wpr.py --help
 usage: wpr.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
 
