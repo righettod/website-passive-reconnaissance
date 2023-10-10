@@ -40,7 +40,7 @@ DEFAULT_CALL_TIMEOUT = 60  # 1 minute
 WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
-                               "xml", "back", "txt"]
+                               "xml", "back", "txt","csv"]
 # See issue https://github.com/righettod/website-passive-reconnaissance/issues/89
 RCE_PRONE_PARAMETERS_DORK = "inurl:cmd | inurl:exec= | inurl:query= | inurl:code= | inurl:do= | inurl:run= | inurl:read= | inurl:ping= inurl:& site:%s"
 
