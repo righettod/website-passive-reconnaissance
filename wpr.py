@@ -29,12 +29,11 @@ from dns.resolver import NXDOMAIN
 from requests.exceptions import ProxyError, RequestException
 from googlesearch import search
 from urllib.error import HTTPError
-from bs4 import BeautifulSoup
 from tabulate import tabulate
 from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36"
 MOBILE_APP_STORE_COUNTRY_STORE_CODE = "LU"  # Luxembourg
 DEFAULT_CALL_TIMEOUT = 60  # 1 minute
 WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
@@ -1131,15 +1130,13 @@ if __name__ == "__main__":
     print(colored(f"[QUALYS] Extract information from SSL cached scan for the domain and IP addresses...", "blue", attrs=["bold"]))
     for ip in ips:
         print(colored(f"{ip}", "yellow", attrs=["bold"]))
-        informations = get_qualys_sslscan_cached_infos(
-            args.domain_name, ip, http_proxy_to_use)
+        informations = get_qualys_sslscan_cached_infos(args.domain_name, ip, http_proxy_to_use)
         print_infos(informations, "  ")
     print(colored(f"[HYBRID-ANALYSIS] Extract the verdict for the IP addresses and the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "hybrid-analysis" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["hybrid-analysis"]
         print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-        informations = get_hybrid_analysis_report_infos(
-            f"domain:{args.domain_name}", api_key, http_proxy_to_use)
+        informations = get_hybrid_analysis_report_infos(f"domain:{args.domain_name}", api_key, http_proxy_to_use)
         print_infos(informations, "  ")
         for ip in ips:
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
@@ -1150,8 +1147,7 @@ if __name__ == "__main__":
     print(colored(f"[VIRUSTOTAL] Extract the presence for the IP addresses or the domain regarding previous hosting of malicious content...", "blue", attrs=["bold"]))
     if "virustotal" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["virustotal"]
-        global_informations = get_virus_total_report_infos(
-            args.domain_name, ips, api_key, http_proxy_to_use)
+        global_informations = get_virus_total_report_infos(args.domain_name, ips, api_key, http_proxy_to_use)
         for k in global_informations:
             print(colored(f"{k}", "yellow", attrs=["bold"]))
             informations = global_informations[k]
@@ -1160,8 +1156,7 @@ if __name__ == "__main__":
         print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
     print(colored(f"[CERTIFICATE-TRANSPARENCY] Extract the referenced subdomains of the target domain...", "blue", attrs=["bold"]))
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-    informations = get_certificate_transparency_log_subdomains(
-        args.domain_name, http_proxy_to_use)
+    informations = get_certificate_transparency_log_subdomains(args.domain_name, http_proxy_to_use)
     print_infos(informations, "  ")
     print(colored(f"[INTELX] Check if the site contain information about the IP addresses or the domain...", "blue", attrs=["bold"]))
     print(colored("[i]", "green") + " INTELX keep a copy of pastes identified so if a paste was removed then it can be still accessed via the INTELX site.")
@@ -1185,8 +1180,7 @@ if __name__ == "__main__":
             print(f"    https://intelx.io/?s={args.domain_name}")
         print_infos(infos_for_domain, "  ")
     else:
-        print(colored(f"Skipped because no API key was specified!",
-              "red", attrs=["bold"]))
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
     print(colored(f"[GITHUB] Extract the repositories with references to the IP addresses or the main domain in their content...", "blue", attrs=["bold"]))
     domain_no_tld = get_main_domain_without_tld(args.domain_name)
     print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
@@ -1272,7 +1266,12 @@ if __name__ == "__main__":
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
             informations = get_leakix_info("ip", ip, http_proxy_to_use)
             print_infos(informations["DATA"], "  ")
+    print(colored(f"[SEARCH.0T.ROCKS] Provide the URL to data for domain '{args.domain_name}' and IP addresses...", "blue", attrs=["bold"]))
+    print(colored("[i]", "green") + f" Use the following URL pattern to browse the data due to Cloudflare protection.")
+    print(f"  https://search.0t.rocks/records?domain={args.domain_name}")
+    for ip in ips:
+        print(f"  https://search.0t.rocks/records?ips={ip}")
+    # Final processing
     delay = round(time.time() - start_time, 2)
     print("")
-    print(
-        ".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")
+    print(".::" + colored(f"Reconnaissance finished in {delay} seconds", "green", attrs=["bold"]) + "::.")
