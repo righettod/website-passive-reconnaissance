@@ -74,8 +74,6 @@ intelx=xxx
 azure-cognitive-services-bing-web-search=xxx
 ;See https://buckets.grayhatwarfare.com/docs/api/v1
 grayhatwarfare=xxx 
-;See https://www.wappalyzer.com/api
-wappalyzer=xxx
 ;See https://viewdns.info/api/
 viewdns=xxx
 ```
@@ -131,6 +129,4 @@ $ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.1
 
 # 📺 Demonstration
 
-https://user-images.githubusercontent.com/1573775/203140192-bf75a1a6-cddd-4f7c-8da9-5e931e6a3f21.mp4
-
-
+<https://user-images.githubusercontent.com/1573775/203140192-bf75a1a6-cddd-4f7c-8da9-5e931e6a3f21.mp4>
