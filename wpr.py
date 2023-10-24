@@ -767,12 +767,12 @@ def get_dns_dumpster_infos(domain, http_proxy):
 
 def get_grayhatwarfare_infos(domain, api_key, http_proxy):
     infos = {"DATA": [], "ERROR": None}
-    service_url_files = f"https://buckets.grayhatwarfare.com/api/v1/files/{domain}/2000?access_token={api_key}"
-    service_url_buckets = f"https://buckets.grayhatwarfare.com/api/v1/buckets/0/2000?keywords={domain}&access_token={api_key}"
+    service_url_files = f"https://buckets.grayhatwarfare.com/api/v2/files?keywords={domain}&limit=1000"
+    service_url_buckets = f"https://buckets.grayhatwarfare.com/api/v2/buckets?keywords={domain}&limit=1000"
     try:
         web_proxies = configure_proxy(http_proxy)
         req_session = requests.Session()
-        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.headers.update({"User-Agent": USER_AGENT, "Authorization": f"Bearer {api_key}"})
         req_session.proxies.update(web_proxies)
         req_session.verify = (http_proxy is None)
         # Extract data for files
@@ -795,9 +795,9 @@ def get_grayhatwarfare_infos(domain, api_key, http_proxy):
         if len(results["buckets"]) > 0:
             for bucket in results["buckets"]:
                 if "container" in bucket:
-                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} in container {bucket['container']} ({bucket['fileCount']} files)")
+                    infos["DATA"].append(f"[BUCKET]: '{bucket['bucket']}' in container '{bucket['container']}' ({bucket['fileCount']} files)")
                 else:
-                    infos["DATA"].append(f"[BUCKET]: {bucket['bucket']} ({bucket['fileCount']} files)")
+                    infos["DATA"].append(f"[BUCKET]: '{bucket['bucket']}' ({bucket['fileCount']} files)")
         infos["DATA"].sort()
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
