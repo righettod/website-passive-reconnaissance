@@ -40,7 +40,7 @@ DEFAULT_CALL_TIMEOUT = 60  # 1 minute
 WAPPALYZER_MAX_MONTHS_RESULT_OLD = 6
 INTERESTING_FILE_EXTENSIONS = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "pps", "odp", "ods", "odt", "rtf",
                                "java", "cs", "vb", "py", "rb", "zip", "tar", "gz", "7z", "eml", "msg", "sql", "ini",
-                               "xml", "back", "txt","csv"]
+                               "xml", "back", "txt", "csv"]
 # See issue https://github.com/righettod/website-passive-reconnaissance/issues/89
 RCE_PRONE_PARAMETERS_DORK = "inurl:cmd | inurl:exec= | inurl:query= | inurl:code= | inurl:do= | inurl:run= | inurl:read= | inurl:ping= inurl:& site:%s"
 
@@ -904,6 +904,40 @@ def get_pgp_users_infos(domain, http_proxy):
     return infos
 
 
+def get_leakix_info(field_type, field_value, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See https://files.leakix.net/p/api
+    service_url = f"https://files.leakix.net/json?q={field_type}:{field_value}"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        response = req_session.get(service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        status = results["status"]
+        if status == "success":
+            for entry in results["data"]:
+                last_changed = entry["last-modified"].split("T")[0]
+                file_url = entry["url"]
+                v = f"{last_changed}: {file_url}"
+                if v not in infos["DATA"]:
+                    infos["DATA"].append(v)
+            infos["DATA"].sort()
+        else:
+            infos["ERROR"] = f"Status '{status}' received!"
+            infos["DATA"].clear()
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -1228,6 +1262,16 @@ if __name__ == "__main__":
         print(f"  {informations['ERROR']}")
     else:
         print_infos(informations["DATA"], prefix="  ")
+    print(colored(f"[FILES.LEAKIX.NET] Retrieve leaked files for domain '{args.domain_name}' and IPv4 addresses...", "blue", attrs=["bold"]))
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_leakix_info("host", args.domain_name, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
+    for ip in ips:
+        # Skip IPV6
+        if ":" not in ip:
+            print(colored(f"{ip}", "yellow", attrs=["bold"]))
+            informations = get_leakix_info("ip", ip, http_proxy_to_use)
+            print_infos(informations["DATA"], "  ")
     delay = round(time.time() - start_time, 2)
     print("")
     print(
