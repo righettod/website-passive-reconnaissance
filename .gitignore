@@ -12,3 +12,4 @@ __pycache__/
 filetype_dork_result.txt
 test.py
 dnsdumpster.*
+*.tmp
