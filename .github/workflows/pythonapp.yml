@@ -25,6 +25,7 @@ jobs:
           pip install -r requirements.txt
           pip uninstall --yes dnsdumpster
           pip install https://github.com/PaulSec/API-dnsdumpster.com/archive/master.zip
-      - name: Try an execution
+      - name: Execute the CI script
         run: |
-          python wpr.py -d righettod.eu -s -n 8.8.8.8 -t 30
+          chmod +x ci.sh
+          bash ci.sh
