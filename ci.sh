@@ -13,7 +13,9 @@ echo "[+] Marker occurences found into the OUT file: $marker."
 rm $OUT
 if [ $marker -eq 0 ]
 then
+    echo "[X] Validation failed!"
     exit -1
 else
+    echo "[V] Validation succeed."
     exit 0
 fi
