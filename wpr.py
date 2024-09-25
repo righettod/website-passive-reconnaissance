@@ -1254,7 +1254,7 @@ if __name__ == "__main__":
     print(f"  https://search.0t.rocks/records?domain={args.domain_name}")
     for ip in ips:
         print(f"  https://search.0t.rocks/records?ips={ip}")
-    print(colored(f"[NAPALM FTP INDEXER] Verify if entires are present for domain '{args.domain_name}', domain without TLD '{domain_no_tld}' and IPv4 addresses...", "blue", attrs=["bold"]))
+    print(colored(f"[NAPALM FTP INDEXER] Verify if entries are present for domain '{args.domain_name}', domain without TLD '{domain_no_tld}' and IPv4 addresses...", "blue", attrs=["bold"]))
     print(colored("[i]", "green") + f" Go to https://www.searchftps.net for the details and content.")
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_napalm_ftp_indexer_info(args.domain_name, http_proxy_to_use)
@@ -1268,7 +1268,7 @@ if __name__ == "__main__":
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
             informations = get_napalm_ftp_indexer_info(ip, http_proxy_to_use)
             print_infos(informations["DATA"], "  ")
-    print(colored(f"[PROXYNOVA COMB] Verify if entires are present for domain '{args.domain_name}' and domain without TLD '{domain_no_tld}'...", "blue", attrs=["bold"]))
+    print(colored(f"[PROXYNOVA COMB] Verify if entries are present for domain '{args.domain_name}' and domain without TLD '{domain_no_tld}'...", "blue", attrs=["bold"]))
     print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
     informations = get_proxynova_comb_info(args.domain_name, http_proxy_to_use)
     print_infos(informations["DATA"], "  ")
