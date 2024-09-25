@@ -525,8 +525,9 @@ def get_qualys_sslscan_cached_infos(domain, ip, http_proxy):
                 infos.append(f"FREAK = {value}")
                 value = details["logjam"]
                 infos.append(f"LOGJAM = {value}")
-                value = details["drownVulnerable"]
-                infos.append(f"DROWN = {value}")
+                if "drownVulnerable" in details:
+                    value = details["drownVulnerable"]
+                    infos.append(f"DROWN = {value}")
                 value = (details["ticketbleed"] == 2)
                 infos.append(f"TICKETBLEED = {value}")
                 value = (details["bleichenbacher"] ==
@@ -920,6 +921,31 @@ def get_napalm_ftp_indexer_info(domain, http_proxy):
     return infos
 
 
+def get_proxynova_comb_info(domain, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See proxynova
+    service_url = f"https://api.proxynova.com/comb?query={domain}&start=0&limit=100"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        response = req_session.get(url=service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if results["count"] > 0:
+            for line in results["lines"]:
+                infos["DATA"].append(line)
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()
     colorama.init()
@@ -1242,6 +1268,13 @@ if __name__ == "__main__":
             print(colored(f"{ip}", "yellow", attrs=["bold"]))
             informations = get_napalm_ftp_indexer_info(ip, http_proxy_to_use)
             print_infos(informations["DATA"], "  ")
+    print(colored(f"[PROXYNOVA COMB] Verify if entires are present for domain '{args.domain_name}' and domain without TLD '{domain_no_tld}'...", "blue", attrs=["bold"]))
+    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
+    informations = get_proxynova_comb_info(args.domain_name, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
+    print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
+    informations = get_proxynova_comb_info(domain_no_tld, http_proxy_to_use)
+    print_infos(informations["DATA"], "  ")
     # Final processing
     delay = round(time.time() - start_time, 2)
     print("")
