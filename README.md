@@ -11,7 +11,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 # 📦 Requirements
 
 > [!IMPORTANT]
-> Only support versions of Python with [Active Support](https://endoflife.date/python).
+> Only support versions of Python in **[Active Support](https://endoflife.date/python)** status.
 
 💬 Execution tested on the following 64 bits versions of Python via this [workflow](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml) and this [script](ci.sh):
 
