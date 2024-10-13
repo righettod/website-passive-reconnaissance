@@ -10,16 +10,16 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 
 # 📦 Requirements
 
-Python >= **3.10**.
+> [!IMPORTANT]
+> Only support versions of Python with [Active Support](https://endoflife.date/python).
 
 💬 Execution tested on the following 64 bits versions of Python via this [workflow](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml) and this [script](ci.sh):
 
 | Version | Supported? |
 |:---:|---|
-| < 3.10 | ❌ |
-| 3.10 | ✅ |
-| 3.11 | ✅ |
+| < 3.12 | ❌ |
 | 3.12 | ✅ |
+| 3.13 | ✅ |
 
 # 💻 Installation of dependencies
 
