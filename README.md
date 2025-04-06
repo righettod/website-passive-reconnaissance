@@ -1,6 +1,6 @@
 ![Test application running state](https://github.com/righettod/website-passive-reconnaissance/workflows/Test%20application%20running%20state/badge.svg) ![Audit python code with CodeQL](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml/badge.svg?branch=master)
 
-![MadeWitVSCode](https://img.shields.io/static/v1?label=Made%20with&message=VisualStudio%20Code&color=blue&?style=for-the-badge&logo=visualstudio)  ![AutomatedWith](https://img.shields.io/static/v1?label=Automated%20with&message=GitHub%20Actions&color=blue&?style=for-the-badge&logo=github) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=Snyk&color=blueviolet&?style=for-the-badge&logo=snyk) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=GitHub%20CodeQL&color=blue&?style=for-the-badge&logo=github)
+![MadeWitVSCode](https://img.shields.io/static/v1?label=Made%20with&message=VisualStudio%20Code&color=blue&?style=for-the-badge&logo=visualstudio)  ![AutomatedWith](https://img.shields.io/static/v1?label=Automated%20with&message=GitHub%20Actions&color=blue&?style=for-the-badge&logo=github) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=GitHub%20CodeQL&color=blue&?style=for-the-badge&logo=github)
 
 # 🎯 Objectives
 
