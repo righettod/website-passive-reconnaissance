@@ -7,5 +7,5 @@ dnsdumpster==0.10
 tabulate==0.9.0
 beautifulsoup4==4.13.4
 dnspython==2.7.0
-GitPython==3.1.44
+GitPython==3.1.45
 urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
