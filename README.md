@@ -29,13 +29,6 @@ Use the following command:
 pip install -r requirements.txt
 ```
 
-⚠️ Due to a [bug](https://github.com/PaulSec/API-dnsdumpster.com/pull/32) in the version **0.8** of the module [dnsdumpster](https://github.com/PaulSec/API-dnsdumpster.com), then, until the [version in pypi](https://pypi.org/project/dnsdumpster/) is the **0.8** then install the module using the following collection of command lines:
-
-```bash
-pip uninstall --yes dnsdumpster
-pip install https://github.com/PaulSec/API-dnsdumpster.com/archive/master.zip
-```
-
 # 📡 Update of the "requirements.txt" file
 
 Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
@@ -75,6 +68,8 @@ azure-cognitive-services-bing-web-search=xxx
 grayhatwarfare=xxx 
 ;See https://viewdns.info/api/
 viewdns=xxx
+;See https://dnsdumpster.com/developer/
+dnsdumpster=xxx
 ```
 
 # 👩‍💻 Usage examples
