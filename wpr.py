@@ -20,7 +20,6 @@ import os
 import tldextract
 import git
 import urllib.parse
-import base64
 import re
 from termcolor import colored
 from dns.resolver import NoAnswer
@@ -30,7 +29,6 @@ from requests.exceptions import ProxyError, RequestException
 from googlesearch import search
 from urllib.error import HTTPError
 from tabulate import tabulate
-from dnsdumpster.DNSDumpsterAPI import DNSDumpsterAPI
 
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -722,35 +720,38 @@ def get_mobile_app_infos(domain, http_proxy):
     return infos
 
 
-def get_dns_dumpster_infos(domain, http_proxy):
-    infos = {"DATA": [], "XLS": None, "IMG": None, "ERROR": None}
+def get_dns_dumpster_infos(domain, api_key, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    record_type = {"txt": "TXT", "mx": "MX", "ns": "NS"}
     try:
         web_proxies = configure_proxy(http_proxy)
-        req_session = requests.Session()
-        req_session.headers.update({"User-Agent": USER_AGENT})
-        req_session.proxies.update(web_proxies)
-        req_session.verify = (http_proxy is None)
-        results = DNSDumpsterAPI(session=req_session).search(domain)
-        if len(results) > 0:
-            data = results["dns_records"]
-            for entry in data["dns"]:
-                infos["DATA"].append(f"[DNS ]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
-            for entry in data["mx"]:
-                infos["DATA"].append(f"[MX  ]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
-            for entry in data["txt"]:
-                infos["DATA"].append(f"[TXT ]: {entry}")
-            for entry in data["host"]:
-                infos["DATA"].append(f"[HOST]: IP \"{entry['ip']}\" - Domain \"{entry['domain']}\" - ReverseDNS \"{entry['reverse_dns']}\" - AS \"{entry['as']}\"")
-            if results["xls_data"] != None:
-                infos["XLS"] = base64.b64decode(results["xls_data"])
-            if results["image_data"] != None:
-                infos["IMG"] = base64.b64decode(results["image_data"])
-            infos["DATA"].sort()
+        # See https://dnsdumpster.com/developer/
+        service_url = f"https://api.dnsdumpster.com/domain/{domain}"
+        response = requests.get(service_url, headers={"User-Agent": USER_AGENT, "X-API-Key": api_key}, proxies=web_proxies, verify=(http_proxy is None), timeout=DEFAULT_CALL_TIMEOUT)
+        if response.status_code != 200:
+            infos["ERROR"].append(f"HTTP response code {response.status_code} received!")
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        for entry in results:
+            if entry == "total_a_recs":
+                continue
+            name = "HOST"
+            if entry in record_type:
+                name = record_type[entry]
+            if entry == "txt":
+                for entry_info in results[entry]:
+                    infos["DATA"].append(f"[{name:<6}]: Domain \"{host_name}\" - Entry {entry_info}")
+            else:
+                for entry_info in results[entry]:
+                    host_name = entry_info["host"]
+                    if "ips" in entry_info:
+                        for ip_info in entry_info["ips"]:
+                            infos["DATA"].append(f"[{name:<6}]: IP \"{ip_info['ip']}\" - Domain \"{host_name}\" - ReverseDNS \"{ip_info['ptr']}\" - AS \"{ip_info['asn_name']}\"")
+        infos["DATA"].sort()
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
         infos["DATA"].clear()
-        infos["XLS"] = None
-        infos["IMG"] = None
     return infos
 
 
@@ -940,6 +941,37 @@ def get_proxynova_comb_info(domain, http_proxy):
         if results["count"] > 0:
             for line in results["lines"]:
                 infos["DATA"].append(line)
+    except Exception as e:
+        infos["ERROR"] = f"Error during web call: {str(e)}"
+        infos["DATA"].clear()
+    return infos
+
+
+def get_swaggerhub_info(domain, http_proxy):
+    infos = {"DATA": [], "ERROR": None}
+    # See https://app.swaggerhub.com/search
+    service_url = f"https://app.swaggerhub.com/apiproxy/specs?sort=BEST_MATCH&order=DESC&limit=25&specType=API&query={domain}"
+    try:
+        web_proxies = configure_proxy(http_proxy)
+        req_session = requests.Session()
+        req_session.headers.update({"User-Agent": USER_AGENT})
+        req_session.proxies.update(web_proxies)
+        req_session.verify = (http_proxy is None)
+        response = req_session.get(url=service_url)
+        if response.status_code != 200:
+            infos["ERROR"] = f"HTTP response code {response.status_code} received!"
+            infos["DATA"].clear()
+            return infos
+        results = response.json()
+        if results["totalCount"] > 0:
+            for api in results["apis"]:
+                api_name = api["name"]
+                api_url = "NA"
+                for prop in api["properties"]:
+                    if prop["type"].lower() == "swagger":
+                        api_url = prop["url"]
+                        break
+                infos["DATA"].append(f"{api_name} => {api_url}")
     except Exception as e:
         infos["ERROR"] = f"Error during web call: {str(e)}"
         infos["DATA"].clear()
@@ -1200,19 +1232,6 @@ if __name__ == "__main__":
         print(colored("[i]", "green") + f" {informations['LIMIT']}")
         print(colored("[i]", "green") + f" Use the following URL pattern to browse the archived data:")
         print("    https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]")
-    print(colored(f"[DNSDUMPSTER] Retrieve the cartography information about the domain and save the Excel/Image as 'dnsdumpster.(xlsx|png)' files...", "blue", attrs=["bold"]))
-    print(colored(f"{args.domain_name}", "yellow", attrs=["bold"]))
-    informations = get_dns_dumpster_infos(args.domain_name, http_proxy_to_use)
-    if informations["ERROR"] is not None:
-        print(f"  {informations['ERROR']}")
-    else:
-        print_infos(informations["DATA"], prefix="  ")
-        if informations["XLS"] is not None:
-            with open("dnsdumpster.xlsx", "wb") as f:
-                f.write(informations["XLS"])
-        if informations["IMG"] is not None:
-            with open("dnsdumpster.png", "wb") as f:
-                f.write(informations["IMG"])
     print(colored(f"[GRAYHATWARFARE] Retrieve files in AWS/AZURE buckets with reference to the domain...", "blue", attrs=["bold"]))
     if "grayhatwarfare" in api_key_config["API_KEYS"]:
         api_key = api_key_config["API_KEYS"]["grayhatwarfare"]
@@ -1275,6 +1294,22 @@ if __name__ == "__main__":
     print(colored(f"{domain_no_tld}", "yellow", attrs=["bold"]))
     informations = get_proxynova_comb_info(domain_no_tld, http_proxy_to_use)
     print_infos(informations["DATA"], "  ")
+    print(colored(f"[SWAGGERHUB] Verify if entries are present for domain without TLD '{domain_no_tld}'...", "blue", attrs=["bold"]))
+    informations = get_swaggerhub_info(domain_no_tld, http_proxy_to_use)
+    if informations["ERROR"] is not None:
+        print(f"  {informations['ERROR']}")
+    else:
+        print_infos(informations["DATA"], prefix="  ")
+    print(colored(f"[DNSDUMPSTER] Retrieve the cartography information about the domain '{args.domain_name}'...", "blue", attrs=["bold"]))
+    if "dnsdumpster" in api_key_config["API_KEYS"]:
+        api_key = api_key_config["API_KEYS"]["dnsdumpster"]
+        informations = get_dns_dumpster_infos(args.domain_name, api_key, http_proxy_to_use)
+        if informations["ERROR"] is not None:
+            print(f"  {informations['ERROR']}")
+        else:
+            print_infos(informations["DATA"], prefix="  ")
+    else:
+        print(colored(f"Skipped because no API key was specified!", "red", attrs=["bold"]))
     # Final processing
     delay = round(time.time() - start_time, 2)
     print("")
