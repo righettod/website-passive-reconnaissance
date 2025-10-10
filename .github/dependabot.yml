@@ -11,3 +11,8 @@ updates:
   - dependency-name: gitpython
     versions:
     - 3.1.14
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      time: '00:45'
