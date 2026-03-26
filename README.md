@@ -20,6 +20,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 | < 3.12 | ❌ |
 | 3.12 | ✅ |
 | 3.13 | ✅ |
+| 3.14 | ✅ |
 
 # 💻 Installation of dependencies
 
