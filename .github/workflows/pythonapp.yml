@@ -1,10 +1,10 @@
 name: Test application running state
 on:
-  workflow_dispatch:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    paths:
+      - "**/*.py"    
+  workflow_dispatch:
 permissions: read-all
 jobs:
   build:
