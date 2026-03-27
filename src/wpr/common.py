@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 import dns.resolver
 from dns.resolver import NXDOMAIN, NoAnswer, NoNameservers
 
+# Import all provider classes explicitly for static instantiation
 # ----------------------
 # Classes
 # ----------------------
@@ -31,7 +32,7 @@ class OSINTProviderData(ABC):
         description_of_data_type: A brief description of the type of data contained within this object.
     """
 
-    def __init__(self, information_lines: dict[str, list[str]], description_of_data_type: str):
+    def __init__(self, information_lines: dict[str, list[str]], description_of_data_type: str = ""):
         self.information_lines = information_lines
         self.description_of_data_type = description_of_data_type
 
@@ -69,7 +70,7 @@ class OSINTProvider(ABC):
 
     @abstractmethod
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
-        return OSINTProviderData({"": []}, "")
+        return OSINTProviderData({"": []})
 
 
 # ----------------------
