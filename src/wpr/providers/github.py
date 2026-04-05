@@ -13,9 +13,6 @@ class GitHub(OSINTProvider):
     def __init__(self, ip_or_domain: str):
         super().__init__(name="GitHub", target_ip_or_domain=ip_or_domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         term = f'"{self.target_ip_or_domain}"'

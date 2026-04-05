@@ -12,9 +12,6 @@ class ShodanIP(OSINTProvider):
     def __init__(self, api_key: str, ip_or_domain: str):
         super().__init__(name="ShodanIP", target_ip_or_domain=ip_or_domain, api_key=api_key)
 
-    def use_api_key(self) -> bool:
-        return True
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://api.shodan.io/shodan/host/{self.target_ip_or_domain}?key={self.api_key}&minify=true"

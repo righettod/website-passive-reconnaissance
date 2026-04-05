@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 import dns.resolver
+import tldextract
 from dns.resolver import NXDOMAIN, NoAnswer, NoNameservers
 
 # Import all provider classes explicitly for static instantiation
@@ -59,14 +60,11 @@ class OSINTProvider(ABC):
         self.api_key = api_key
         self.target_ip_or_domain = target_ip_or_domain
 
-    def use_api_key(self) -> bool:
+    def get_additional_infos(self) -> str:
         """
-        Indicates whether this OSINT provider requires an API key for operation.
-
-        Returns:
-            True if an API key is required, False otherwise.
+        Additional information like for example the URL to get the details.
         """
-        return False
+        return ""
 
     @abstractmethod
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
@@ -186,8 +184,30 @@ def perform_dns_lookup(domain: str, record_types: List[str], name_server: Option
 
     return results
 
+def get_main_domain_without_tld(domain: str) -> str:
+    """
+    Extracts the registrable domain name without the TLD (top-level domain) suffix.
 
-def print_osint_data(data: OSINTProviderData):
+    For example, given "sub.example.com", returns "example".
+
+    Args:
+        domain: The full domain name to parse (e.g. "sub.example.com").
+
+    Returns:
+        The domain name component without subdomains or TLD (e.g. "example").
+    """
+    domain_infos = tldextract.extract(domain)
+    return domain_infos.domain
+
+
+def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False):
+    if not is_end:
+        print(f"\r💻 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
+    else:
+        print(f"\r💻 Data gathering finished.{' ':<60}")
+
+
+def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
     """
     Prints the structured OSINT data using the rich library for formatted output.
 
@@ -196,9 +216,14 @@ def print_osint_data(data: OSINTProviderData):
     Args:
         data: An OSINTProviderData object containing the information to print.
     """
+    provider = data[0]
+    provider_data = data[1]
     console = Console()
-    for section, lines in data.information_lines.items():
-        if section:  # Only print section header if it's not empty
-            console.print(Text(f"[ {section} ]", style="dark_yellow"))
-        for line in lines:
-            console.print(line)
+    console.print(Text(f"🔬 {provider.name}", style="bright_blue"), highlight=False)
+    if len(provider.get_additional_infos()) > 0:
+        console.print(Text(f"ℹ️ {provider.get_additional_infos()}", style="bright_magenta"), highlight=False)
+    for section, lines in provider_data.information_lines.items():
+        if len(lines) > 0:
+            console.print(Text(f"[ {section} ]", style="yellow"), highlight=False)
+            for line in lines:
+                console.print(line, highlight=False)

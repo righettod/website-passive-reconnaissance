@@ -1,4 +1,4 @@
-# Website Passive Reconnaissance (WPR) - Gemini Instructions
+# Website Passive Reconnaissance (WPR) - Claude Code Instructions
 
 ## Project Overview
 

@@ -18,9 +18,6 @@ class Leakix(OSINTProvider):
         self.field_type = field_type
         self.field_value = field_value
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://files.leakix.net/json?q={self.field_type}:{self.field_value}"

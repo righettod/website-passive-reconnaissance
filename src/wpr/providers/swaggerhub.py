@@ -13,9 +13,6 @@ class SwaggerHub(OSINTProvider):
     def __init__(self, domain: str):
         super().__init__(name="SwaggerHub", target_ip_or_domain=domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://app.swaggerhub.com/apiproxy/specs?sort=BEST_MATCH&order=DESC&limit=25&specType=API&query={self.target_ip_or_domain}"

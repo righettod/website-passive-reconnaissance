@@ -15,9 +15,6 @@ class WaybackMachine(OSINTProvider):
     def __init__(self, domain: str):
         super().__init__(name="WaybackMachine", target_ip_or_domain=domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://archive.org/wayback/available?url={self.target_ip_or_domain}"

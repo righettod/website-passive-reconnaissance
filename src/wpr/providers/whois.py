@@ -10,9 +10,6 @@ class Whois(OSINTProvider):
     def __init__(self, target_domain: str):
         super().__init__(name="Dns", target_ip_or_domain=target_domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         infos = get_whois_info(self.target_ip_or_domain)
         information_lines = {"INFOS": infos["PARSED"]}

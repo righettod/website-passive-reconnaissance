@@ -16,8 +16,8 @@ class IntelX(OSINTProvider):
     def __init__(self, api_key: str, ip_or_domain: str):
         super().__init__(name="IntelX", target_ip_or_domain=ip_or_domain, api_key=api_key)
 
-    def use_api_key(self) -> bool:
-        return True
+    def get_additional_infos(self) -> str:
+        return "Use the following URL from a browser: https://intelx.io/?s=[IP_OR_DOMAIN]"
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT, "x-key": self.api_key}

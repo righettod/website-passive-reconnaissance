@@ -15,8 +15,8 @@ class SoftwareHeritage(OSINTProvider):
     def __init__(self, ip_or_domain: str):
         super().__init__(name="SoftwareHeritage", target_ip_or_domain=ip_or_domain)
 
-    def use_api_key(self) -> bool:
-        return False
+    def get_additional_infos(self) -> str:
+        return "Use the following URL pattern to browse the archived data: https://archive.softwareheritage.org/browse/origin/directory/?origin_url=[ENTRY_URL]"
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}

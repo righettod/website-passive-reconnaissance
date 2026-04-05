@@ -16,9 +16,6 @@ class MobileAppStores(OSINTProvider):
         super().__init__(name="MobileAppStores", target_ip_or_domain=target_domain)
         self.country_code = country_code
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         information_lines = {"IOS": [], "ANDROID": []}
         request_headers = {"User-Agent": USER_AGENT}

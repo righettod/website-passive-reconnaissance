@@ -12,9 +12,6 @@ class CertificateTransparencyLog(OSINTProvider):
     def __init__(self, target_domain: str):
         super().__init__(name="CertificateTransparencyLog", target_ip_or_domain=target_domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://crt.sh/?q=%.{self.target_ip_or_domain}&output=json"

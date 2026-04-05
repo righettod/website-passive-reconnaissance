@@ -13,9 +13,6 @@ class GrayHatWarfare(OSINTProvider):
     def __init__(self, api_key: str, domain: str):
         super().__init__(name="GrayHatWarfare", target_ip_or_domain=domain, api_key=api_key)
 
-    def use_api_key(self) -> bool:
-        return True
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT, "Authorization": f"Bearer {self.api_key}"}
         information_lines = {"DATA": []}

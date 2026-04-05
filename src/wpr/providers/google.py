@@ -16,9 +16,6 @@ class Google(OSINTProvider):
     def __init__(self, ip_or_domain: str):
         super().__init__(name="GoogleDorks", target_ip_or_domain=ip_or_domain)
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         dorks = []
         dorks.append(f'site:pastebin.com "{self.target_ip_or_domain}"')
@@ -26,5 +23,5 @@ class Google(OSINTProvider):
         dorks.append(RCE_PRONE_PARAMETERS_DORK % self.target_ip_or_domain)
         information_lines = {}
         for dork in dorks:
-            information_lines[dork] = search(term=dork, sleep_interval=5, num_results=100, timeout=req_timeout, safe="")
+            information_lines[dork] = list(search(term=dork, sleep_interval=5, num_results=100, timeout=req_timeout, safe=""))
         return OSINTProviderData(information_lines=information_lines, description_of_data_type="Google Dorks for the domain")

@@ -16,9 +16,6 @@ class QualysSslScan(OSINTProvider):
         super().__init__(name="QualysSslScan", target_ip_or_domain=target_ip)
         self.target_domain = target_domain
 
-    def use_api_key(self) -> bool:
-        return False
-
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         request_headers = {"User-Agent": USER_AGENT}
         service_url = f"https://api.ssllabs.com/api/v3/getEndpointData?host={self.target_domain}&s={self.target_ip_or_domain}&fromCache=on"

@@ -7,12 +7,9 @@ from wpr.constants import DEFAULT_CALL_TIMEOUT
 
 
 class Dns(OSINTProvider):
-    def __init__(self, target_domain: str, name_server: str):
+    def __init__(self, target_domain: str, name_server: str | None):
         super().__init__(name="Dns", target_ip_or_domain=target_domain)
         self.name_server = name_server
-
-    def use_api_key(self) -> bool:
-        return False
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         information_lines = {}
