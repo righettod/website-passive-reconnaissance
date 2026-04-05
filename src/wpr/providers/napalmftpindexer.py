@@ -16,6 +16,7 @@ class NapalmFtpIndexer(OSINTProvider):
         super().__init__(name="NapalmFtpIndexer", target_ip_or_domain=domain)
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
+        data_type = "FTP server entries"
         request_headers = {"User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
         information_lines = {"FTP_INDEXES": []}
         service_url = "https://www.searchftps.net/"
@@ -28,9 +29,8 @@ class NapalmFtpIndexer(OSINTProvider):
         if expected_response_marker not in results.lower():
             # Original code wrote to debug.tmp, here we add to information_lines
             information_lines["FTP_INDEXES"].append(f"Non-expected response received, marker '{expected_response_marker}' not found.")
-            return OSINTProviderData(information_lines=information_lines)
+            return OSINTProviderData(information_lines=information_lines, description_of_data_type=data_type)
         results_count_match = re.findall(regex_results_count, results, re.IGNORECASE | re.MULTILINE)
         if results_count_match and int(results_count_match[0]) > 0:
             information_lines["FTP_INDEXES"].append(f"{results_count_match[0]} entries present on the site.")
-        else:
-            return OSINTProviderData(information_lines=information_lines, description_of_data_type="FTP server entries")
+        return OSINTProviderData(information_lines=information_lines, description_of_data_type=data_type)

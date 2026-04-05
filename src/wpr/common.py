@@ -2,7 +2,6 @@
 Contains functions and classes shared by all providers.
 """
 
-import socket
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -76,72 +75,6 @@ class OSINTProvider(ABC):
 # ----------------------
 
 
-def _do_whois_request(ip: str, whois_server: str) -> str:
-    """
-    Performs a raw WHOIS request to the specified server.
-
-    Args:
-        ip: The IP address to query.
-        whois_server: The WHOIS server to connect to.
-
-    Returns:
-        The raw WHOIS response as a string.
-    """
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((whois_server, 43))
-    s.send(str(ip).encode())
-    response = b""
-    while True:
-        data = s.recv(4096)
-        response += data
-        if not data:
-            break
-    s.close()
-    return response.decode("utf-8", "ignore")
-
-
-def get_whois_info(ip: str) -> dict[str, list[str]]:
-    """
-    Retrieves and parses WHOIS information for a given IP address.
-
-    Args:
-        ip: The IP address to query.
-
-    Returns:
-        A dictionary with parsed WHOIS information, categorized into 'RAW' and 'PARSED' sections.
-    """
-    whois_orgs = ["arin", "lacnic", "afrinic", "ripe", "apnic"]
-    whois_server_tpl = "whois.%s.net"
-
-    # First try with ARIN
-    whois_response = _do_whois_request(ip, whois_server_tpl % "arin")
-
-    # Check for referral and retry with the correct WHOIS server
-    for line in whois_response.splitlines():
-        if line.strip().startswith("Ref:"):
-            link = line[4:].strip()
-            org = link.split("/")[-1]
-            if org.lower() in whois_orgs:
-                whois_response = _do_whois_request(ip, whois_server_tpl % org)
-                break
-
-    infos = {"RAW": [line for line in whois_response.splitlines() if line.strip()], "PARSED": []}
-
-    records_skip_prefix = ["Ref:", "OrgTech", "OrgAbuse", "OrgNOC", "tech-c", "admin-c", "remarks", "e-mail", "abuse", "Comment", "#", "%"]
-    for record in whois_response.splitlines():
-        if len(record.strip()) == 0:
-            continue
-        skip_it = False
-        for prefix in records_skip_prefix:
-            if record.strip().startswith(prefix):
-                skip_it = True
-                break
-        if not skip_it:
-            infos["PARSED"].append(record)
-
-    return infos
-
-
 def perform_dns_lookup(domain: str, record_types: List[str], name_server: Optional[str] = None) -> Dict[str, List[str]]:
     """
     Performs DNS lookups for specified record types for a given domain.
@@ -202,9 +135,9 @@ def get_main_domain_without_tld(domain: str) -> str:
 
 def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False):
     if not is_end:
-        print(f"\r💻 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
+        print(f"\r🧑‍💻 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
     else:
-        print(f"\r💻 Data gathering finished.{' ':<60}")
+        print(f"\r✅ Data gathering finished.{' ':<60}")
 
 
 def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
@@ -218,12 +151,17 @@ def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
     """
     provider = data[0]
     provider_data = data[1]
-    console = Console()
-    console.print(Text(f"🔬 {provider.name}", style="bright_blue"), highlight=False)
-    if len(provider.get_additional_infos()) > 0:
-        console.print(Text(f"ℹ️ {provider.get_additional_infos()}", style="bright_magenta"), highlight=False)
-    for section, lines in provider_data.information_lines.items():
+    provider_has_data = False
+    for lines in provider_data.information_lines.values():
         if len(lines) > 0:
-            console.print(Text(f"[ {section} ]", style="yellow"), highlight=False)
-            for line in lines:
-                console.print(line, highlight=False)
+            provider_has_data = True
+            break
+    if provider_has_data:
+        console = Console()
+        for section, lines in provider_data.information_lines.items():
+            if len(lines) > 0:
+                console.print(f"[yellow]🔬 {provider.name} ({section.title()}): {provider_data.description_of_data_type} for '{provider.target_ip_or_domain}'[/yellow]", highlight=False)
+                for line in lines:
+                    console.print(line, highlight=False)
+        if len(provider.get_additional_infos()) > 0:
+            console.print(Text(f"ℹ️ {provider.get_additional_infos()}", style="bright_magenta"), highlight=False)

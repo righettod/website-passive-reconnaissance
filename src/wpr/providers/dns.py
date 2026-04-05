@@ -15,5 +15,5 @@ class Dns(OSINTProvider):
         information_lines = {}
         records = perform_dns_lookup(self.target_ip_or_domain, ["A", "AAAA", "CNAME"], self.name_server)
         for record_type, record_entries in records.items():
-            information_lines[record_type] = record_entries
+            information_lines[f"Record {record_type}"] = record_entries
         return OSINTProviderData(information_lines=information_lines, description_of_data_type="IP V4/V6 addresses and aliases")

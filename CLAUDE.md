@@ -31,3 +31,4 @@ Automated passive reconnaissance tool for website assessments.
 
 - **API Keys:** Never hardcode API keys. Always use the INI configuration file pattern described in `README.md`.
 - **Sensitive Data:** Ensure any debug logging excludes sensitive reconnaissance results or API credentials.
+- **Third Party Package:** Ensure that any proposed package is actively maintained and be maintained by more than one person.

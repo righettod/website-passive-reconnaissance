@@ -183,15 +183,17 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     provider_data = handle_provider_call(provider, req_timeout)
     providers_data.append((provider, provider_data))
     ## LEAKIX
-    provider = Leakix("host", domain)
-    print_data_gathering_progress(provider)
-    provider_data = handle_provider_call(provider, req_timeout)
-    providers_data.append((provider, provider_data))
-    for ip in ips_v4:
-        provider = Leakix("ip", ip)
+    api_key = api_keys.get("leakix", None)
+    if api_key is not None:
+        provider = Leakix(api_key, "domain", domain)
         print_data_gathering_progress(provider)
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
+        for ip in ips_v4:
+            provider = Leakix(api_key, "host", ip)
+            print_data_gathering_progress(provider)
+            provider_data = handle_provider_call(provider, req_timeout)
+            providers_data.append((provider, provider_data))
     ## NAPALM FTP INDEXER
     for ip in ips_v4:
         provider = NapalmFtpIndexer(ip)
