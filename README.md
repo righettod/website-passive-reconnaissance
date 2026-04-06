@@ -66,14 +66,15 @@ options:
 
 required arguments:
   -d DOMAIN_NAME        Domain to analyse (ex: righettod.eu).
+```
 
-
-$ wpr -d righettod.eu
-$ wpr -d righettod.eu -n 8.8.8.8
-$ wpr -d righettod.eu -n 8.8.8.8 -m FR
-$ wpr -d righettod.eu -n 8.8.8.8 -t 30
-$ wpr -d righettod.eu -a api_keys.ini
-$ wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
+```bash
+wpr -d righettod.eu
+wpr -d righettod.eu -n 8.8.8.8
+wpr -d righettod.eu -n 8.8.8.8 -m FR
+wpr -d righettod.eu -n 8.8.8.8 -t 30
+wpr -d righettod.eu -a api_keys.ini
+wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ```
 
 # 📺 Demonstration
