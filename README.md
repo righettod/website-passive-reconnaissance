@@ -24,7 +24,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 Use the following command:
 
 ```bash
-pip install git+https://github.com/righettod/website-passive-reconnaissance.git@v2
+pip install --no-cache git+https://github.com/righettod/website-passive-reconnaissance.git@v2
 ```
 
 # 🔑 API keys file
@@ -52,18 +52,20 @@ leakix=xxx
 # 👩‍💻 Usage examples
 
 ```bash
-$ wpr --help
-usage: main.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-t REQUEST_TIMEOUT] [-m MOBILE_APP_STORE_COUNTRY_CODE]
+$ wpr --help                                                                                   
+usage: wpr [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-t REQUEST_TIMEOUT] [-m MOBILE_APP_STORE_COUNTRY_CODE]
 
 options:
   -h, --help            show this help message and exit
   -a API_KEY_FILE       Configuration INI file with all API keys (ex: conf.ini).
   -n NAME_SERVER        Name server to use for the DNS query (ex: 8.8.8.8), default to the system defined one.
   -t REQUEST_TIMEOUT    Delay in seconds allowed for a HTTP request to reply before to fall in timeout (default to 240 seconds).
-  -m MOBILE_APP_STORE_COUNTRY_CODE Country code to define in which store mobile app will be searched (default to LU).
+  -m MOBILE_APP_STORE_COUNTRY_CODE
+                        Country code to define in which store mobile app will be searched (default to LU).
 
 required arguments:
   -d DOMAIN_NAME        Domain to analyse (ex: righettod.eu).
+
 
 $ wpr -d righettod.eu
 $ wpr -d righettod.eu -n 8.8.8.8

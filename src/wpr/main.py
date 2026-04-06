@@ -5,8 +5,8 @@ import time
 import httpx
 from rich.console import Console
 
-from wpr.common import OSINTProvider, OSINTProviderData, get_main_domain_without_tld, perform_dns_lookup, print_data_gathering_progress, print_header, print_osint_data
-from wpr.constants import DEFAULT_CALL_TIMEOUT, MOBILE_APP_STORE_COUNTRY_STORE_CODE, WPR_VERSION
+from wpr.common import OSINTProvider, OSINTProviderData, get_main_domain_without_tld, get_wpr_version, perform_dns_lookup, print_data_gathering_progress, print_header, print_osint_data
+from wpr.constants import DEFAULT_CALL_TIMEOUT, MOBILE_APP_STORE_COUNTRY_STORE_CODE
 from wpr.providers.certificatetransparencylog import CertificateTransparencyLog
 from wpr.providers.dns import Dns
 from wpr.providers.dnsdumpster import DnsDumpster
@@ -47,7 +47,7 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     providers_data = []
     domain_without_tld = get_main_domain_without_tld(domain)
     # First extract IP addresses and aliases for the domain
-    records = perform_dns_lookup(domain, ["A", "AAAA"], name_server)
+    records = perform_dns_lookup(domain, ["A", "AAAA"], name_server, req_timeout)
     ips_v4 = records.get("A", [])
     ips_v6 = records.get("AAAA", [])
     ips_all = set(ips_v4 + ips_v6)
@@ -262,7 +262,7 @@ def main():
         default_mobile_app_store_country_store_code = args.mobile_app_store_country_code
     api_keys_dict = dict(api_key_config["API_KEYS"])
     print_header(["Execution context"])
-    print(f"WPR version                   : {WPR_VERSION}")
+    print(f"WPR version                   : {get_wpr_version()}")
     print(f"Target                        : {args.domain_name}")
     print(f"DNS name server specified     : {default_name_server}")
     print(f"API keys loaded               : {len(api_keys_dict)}")

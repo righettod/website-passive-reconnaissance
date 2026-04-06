@@ -2,8 +2,11 @@
 Contains functions and classes shared by all providers.
 """
 
+import tomllib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import dns.resolver
@@ -65,13 +68,22 @@ class OSINTProvider(ABC):
 
     @abstractmethod
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
+        """
+        Executes the provider query and returns the collected OSINT data.
+
+        Args:
+            req_timeout: Maximum time in seconds to wait for network responses.
+
+        Returns:
+            An OSINTProviderData object containing the structured results.
+        """
         return OSINTProviderData({"": []})
 
 
 # ----------------------
 # Functions
 # ----------------------
-def perform_dns_lookup(domain: str, record_types: List[str], name_server: Optional[str] = None) -> Dict[str, List[str]]:
+def perform_dns_lookup(domain: str, record_types: List[str], name_server: Optional[str] = None, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> Dict[str, List[str]]:
     """
     Performs DNS lookups for specified record types for a given domain.
 
@@ -87,6 +99,7 @@ def perform_dns_lookup(domain: str, record_types: List[str], name_server: Option
     resolver = dns.resolver.Resolver(configure=True)
     if name_server:
         resolver.nameservers = [name_server]
+    resolver.lifetime = req_timeout
 
     results: Dict[str, List[str]] = {}
     errors: List[str] = []
@@ -130,12 +143,30 @@ def get_main_domain_without_tld(domain: str) -> str:
 
 
 def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False):
+    """
+    Prints an inline progress indicator for the data gathering phase.
+
+    Overwrites the current terminal line during collection and prints a
+    completion message when is_end is True.
+
+    Args:
+        provider: The provider currently being queried.
+        is_end: When True, prints the final completion message instead of the in-progress one.
+    """
     if not is_end:
         print(f"\r🧑‍💻 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
     else:
         print(f"\r✅ Data gathering finished.{' ':<60}")
 
 def print_header(messages: list[str]):
+    """
+    Prints a styled section header using the rich library.
+
+    Surrounds the given messages with bright-cyan separator lines of fixed length.
+
+    Args:
+        messages: Lines of text to display inside the header block.
+    """
     console = Console()
     color = "bright_cyan"
     separator_char = "="
@@ -171,3 +202,25 @@ def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
                 console.print(f"[bright_yellow]🔬 {provider_data.description_of_data_type} for '{provider.target_ip_or_domain}' ({section.title()}):[/bright_yellow]", highlight=False)
                 for line in lines:
                     console.print(line, highlight=False)
+
+def get_wpr_version() -> str:
+    """
+    Returns the current version of the wpr package.
+
+    Reads the version from the installed package metadata when available,
+    and falls back to parsing pyproject.toml directly for uninstalled runs.
+
+    Returns:
+        The version string (e.g. "2.0.0").
+    """
+    wpr_version = "na"
+    try:
+        wpr_version = version("wpr")
+        if wpr_version is None or wpr_version.strip() == "":
+            raise PackageNotFoundError()
+    except PackageNotFoundError:
+        pyproject_file_location = str(Path(__file__).parent.parent.parent) + "/pyproject.toml"
+        with open(pyproject_file_location, "rb") as f:
+            project_metadata = tomllib.load(f)
+        wpr_version = project_metadata["project"]["version"]
+    return wpr_version
