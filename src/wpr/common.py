@@ -222,5 +222,5 @@ def get_wpr_version() -> str:
         pyproject_file_location = str(Path(__file__).parent.parent.parent) + "/pyproject.toml"
         with open(pyproject_file_location, "rb") as f:
             project_metadata = tomllib.load(f)
-        wpr_version = project_metadata["project"]["version"]
+        wpr_version = project_metadata["project"]["version"] + " (read from project TOML file)"
     return wpr_version
