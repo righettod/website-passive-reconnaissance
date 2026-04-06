@@ -13,7 +13,7 @@ class Dns(OSINTProvider):
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         information_lines = {}
-        records = perform_dns_lookup(self.target_ip_or_domain, ["A", "AAAA", "CNAME"], self.name_server)
+        records = perform_dns_lookup(self.target_ip_or_domain, ["A", "AAAA", "CNAME"], self.name_server, req_timeout)
         for record_type, record_entries in records.items():
             information_lines[f"Record {record_type}"] = record_entries
         return OSINTProviderData(information_lines=information_lines, description_of_data_type="IP V4/V6 addresses and aliases")

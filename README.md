@@ -97,3 +97,9 @@ TODO
 * It use [uv](https://docs.astral.sh/uv/) to manage [the python project](pyproject.toml).
 * OSINT data providers are now defined via a sub classe to allow to easlily add new ones.
 * [CLAUDE.md file](CLAUDE.md) and other [Claude code related files](.claude/) are used to define the coding and security guidelines.
+* Use the following command to run the project locally:
+
+```bash
+cd src/wpr
+uv run main.py -d righettod.eu
+```
