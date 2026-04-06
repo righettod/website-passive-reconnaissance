@@ -23,7 +23,10 @@ Automated passive reconnaissance tool for website assessments.
 - **Type Hints:** Use `PEP 484` type hints for all new functions and methods.
 - **Output:** Use the `rich` library for all terminal output to maintain consistent styling.
 - **Documentation:** Maintain existing Markdown documentation style and update `README.md` for new features.
-- **Data Description:** All `OSINTProviderData` subclasses must define a `description_of_data_type` class attribute.
+- **Data Description:** All `OSINTProviderData` instances must set the `description_of_data_type` constructor argument.
+- **Data provider:**
+  - All providers in the package `src/wpr/providers` must be a subclass of the base class `OSINTProvider`.
+  - All providers must be located in package `src/wpr/providers`.
 
 ## Security Guidelines
 
