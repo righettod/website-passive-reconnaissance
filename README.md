@@ -77,7 +77,7 @@ $ wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
 
 TODO
 
-# 🧑‍💻 Development
+# 🧑‍💻 Migration to V2 & Development
 
 ## Choices
 
@@ -93,4 +93,4 @@ TODO
 * It is configured to use [Visual Studio Code](https://code.visualstudio.com/) and a [workspace file](project.code-workspace) is provided.
 * It use [uv](https://docs.astral.sh/uv/) to manage [the python project](pyproject.toml).
 * OSINT data providers are now defined via a sub classe to allow to easlily add new ones.
-* [Claude code file](CLAUDE.md) is used to define the coding and security guidelines.
+* [CLAUDE.md file](CLAUDE.md) and other [Claude code related files](.claude/) are used to define the coding and security guidelines.

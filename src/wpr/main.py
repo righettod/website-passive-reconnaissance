@@ -238,7 +238,7 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     print_data_gathering_progress(provider, is_end=True)
     return providers_data
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     required_params = parser.add_argument_group("required arguments")
     required_params.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: righettod.eu).", required=True)
@@ -279,3 +279,7 @@ if __name__ == "__main__":
     # Final processing
     print("")
     Console().print(f"✅ Reconnaissance finished in [bright_green][bold]{delay}[/bold][/bright_green] seconds.")
+
+
+if __name__ == "__main__":
+    main()
