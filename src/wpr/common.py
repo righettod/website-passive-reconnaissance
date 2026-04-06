@@ -154,7 +154,7 @@ def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False)
         is_end: When True, prints the final completion message instead of the in-progress one.
     """
     if not is_end:
-        print(f"\r🧑‍💻 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
+        print(f"\r📡 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
     else:
         print(f"\r✅ Data gathering finished.{' ':<60}")
 

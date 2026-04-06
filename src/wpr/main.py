@@ -240,6 +240,7 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-v", action="version", version=f"{get_wpr_version()}")
     required_params = parser.add_argument_group("required arguments")
     required_params.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: righettod.eu).", required=True)
     parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)

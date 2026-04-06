@@ -53,10 +53,11 @@ leakix=xxx
 
 ```bash
 $ wpr --help                                                                                   
-usage: wpr [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-t REQUEST_TIMEOUT] [-m MOBILE_APP_STORE_COUNTRY_CODE]
+usage: wpr [-h] [-v] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-t REQUEST_TIMEOUT] [-m MOBILE_APP_STORE_COUNTRY_CODE]
 
 options:
   -h, --help            show this help message and exit
+  -v                    show program's version number and exit  
   -a API_KEY_FILE       Configuration INI file with all API keys (ex: conf.ini).
   -n NAME_SERVER        Name server to use for the DNS query (ex: 8.8.8.8), default to the system defined one.
   -t REQUEST_TIMEOUT    Delay in seconds allowed for a HTTP request to reply before to fall in timeout (default to 240 seconds).
