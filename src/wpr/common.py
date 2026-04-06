@@ -9,17 +9,15 @@ from typing import Dict, List, Optional
 import dns.resolver
 import tldextract
 from dns.resolver import NXDOMAIN, NoAnswer, NoNameservers
-
-# Import all provider classes explicitly for static instantiation
-# ----------------------
-# Classes
-# ----------------------
 from rich.console import Console
 from rich.text import Text
 
-from wpr.constants import DEFAULT_CALL_TIMEOUT
+from wpr.constants import DEFAULT_CALL_TIMEOUT, HEADER_LENGTH
 
 
+# ----------------------
+# Classes
+# ----------------------
 @dataclass
 class OSINTProviderData(ABC):
     """
@@ -73,8 +71,6 @@ class OSINTProvider(ABC):
 # ----------------------
 # Functions
 # ----------------------
-
-
 def perform_dns_lookup(domain: str, record_types: List[str], name_server: Optional[str] = None) -> Dict[str, List[str]]:
     """
     Performs DNS lookups for specified record types for a given domain.
@@ -139,6 +135,15 @@ def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False)
     else:
         print(f"\r✅ Data gathering finished.{' ':<60}")
 
+def print_header(messages: list[str]):
+    console = Console()
+    color = "bright_cyan"
+    separator_char = "="
+    separator = separator_char * HEADER_LENGTH
+    console.print(f"[{color}]{separator}[/{color}]")
+    for message in messages:
+        console.print(f"[{color}]{separator_char} {message}[/{color}]")
+    console.print(f"[{color}]{separator}[/{color}]")
 
 def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
     """
@@ -158,10 +163,11 @@ def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
             break
     if provider_has_data:
         console = Console()
-        for section, lines in provider_data.information_lines.items():
-            if len(lines) > 0:
-                console.print(f"[yellow]🔬 {provider.name} ({section.title()}): {provider_data.description_of_data_type} for '{provider.target_ip_or_domain}'[/yellow]", highlight=False)
-                for line in lines:
-                    console.print(line, highlight=False)
+        print_header([provider.name])
         if len(provider.get_additional_infos()) > 0:
             console.print(Text(f"ℹ️ {provider.get_additional_infos()}", style="bright_magenta"), highlight=False)
+        for section, lines in provider_data.information_lines.items():
+            if len(lines) > 0:
+                console.print(f"[bright_yellow]🔬 {provider_data.description_of_data_type} for '{provider.target_ip_or_domain}' ({section.title()}):[/bright_yellow]", highlight=False)
+                for line in lines:
+                    console.print(line, highlight=False)

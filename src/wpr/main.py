@@ -3,9 +3,10 @@ import configparser
 import time
 
 import httpx
+from rich.console import Console
 
-from wpr.common import OSINTProvider, OSINTProviderData, get_main_domain_without_tld, perform_dns_lookup, print_data_gathering_progress, print_osint_data
-from wpr.constants import DEFAULT_CALL_TIMEOUT, MOBILE_APP_STORE_COUNTRY_STORE_CODE
+from wpr.common import OSINTProvider, OSINTProviderData, get_main_domain_without_tld, perform_dns_lookup, print_data_gathering_progress, print_header, print_osint_data
+from wpr.constants import DEFAULT_CALL_TIMEOUT, MOBILE_APP_STORE_COUNTRY_STORE_CODE, WPR_VERSION
 from wpr.providers.certificatetransparencylog import CertificateTransparencyLog
 from wpr.providers.dns import Dns
 from wpr.providers.dnsdumpster import DnsDumpster
@@ -238,14 +239,13 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     return providers_data
 
 if __name__ == "__main__":
-    start_time = time.time()
     parser = argparse.ArgumentParser()
     required_params = parser.add_argument_group("required arguments")
     required_params.add_argument("-d", action="store", dest="domain_name", help="Domain to analyse (ex: righettod.eu).", required=True)
     parser.add_argument("-a", action="store", dest="api_key_file", default=None, help="Configuration INI file with all API keys (ex: conf.ini).", required=False)
-    parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8).", required=False)
-    parser.add_argument("-t", action="store", dest="request_timeout", type=int, default=DEFAULT_CALL_TIMEOUT, help="Delay in seconds allowed for a HTTP request to reply before to fall in timeout (ex: 20).", required=False)
-    parser.add_argument("-m", action="store", dest="mobile_app_store_country_code", default=MOBILE_APP_STORE_COUNTRY_STORE_CODE, help="Country code to define in which store mobile app will be searched (ex: LU).", required=False)
+    parser.add_argument("-n", action="store", dest="name_server", default=None, help="Name server to use for the DNS query (ex: 8.8.8.8), default to the system defined one.", required=False)
+    parser.add_argument("-t", action="store", dest="request_timeout", type=int, default=DEFAULT_CALL_TIMEOUT, help=f"Delay in seconds allowed for a HTTP request to reply before to fall in timeout (default to {DEFAULT_CALL_TIMEOUT} seconds).", required=False)
+    parser.add_argument("-m", action="store", dest="mobile_app_store_country_code", default=MOBILE_APP_STORE_COUNTRY_STORE_CODE, help=f"Country code to define in which store mobile app will be searched (default to {MOBILE_APP_STORE_COUNTRY_STORE_CODE}).", required=False)
     args = parser.parse_args()
     api_key_config = configparser.ConfigParser()
     api_key_config["API_KEYS"] = {}
@@ -260,6 +260,22 @@ if __name__ == "__main__":
     default_mobile_app_store_country_store_code = MOBILE_APP_STORE_COUNTRY_STORE_CODE
     if args.mobile_app_store_country_code != MOBILE_APP_STORE_COUNTRY_STORE_CODE:
         default_mobile_app_store_country_store_code = args.mobile_app_store_country_code
-    providers_data = gather_data(args.domain_name, default_name_server, default_request_timeout, dict(api_key_config["API_KEYS"]), default_mobile_app_store_country_store_code)
+    api_keys_dict = dict(api_key_config["API_KEYS"])
+    print_header(["Execution context"])
+    print(f"WPR version                   : {WPR_VERSION}")
+    print(f"Target                        : {args.domain_name}")
+    print(f"DNS name server specified     : {default_name_server}")
+    print(f"API keys loaded               : {len(api_keys_dict)}")
+    print(f"Mobile app store country used : {default_mobile_app_store_country_store_code}")
+    print("")
+    print_header(["Gather data from providers"])
+    start_time = time.time()
+    providers_data = gather_data(args.domain_name, default_name_server, default_request_timeout, api_keys_dict, default_mobile_app_store_country_store_code)
+    delay = round(time.time() - start_time, 2)
+    print("")
     for provider_data in providers_data:
         print_osint_data(provider_data)
+        print("")
+    # Final processing
+    print("")
+    Console().print(f"✅ Reconnaissance finished in [bright_green][bold]{delay}[/bold][/bright_green] seconds.")

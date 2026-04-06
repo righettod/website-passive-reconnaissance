@@ -4,15 +4,14 @@
 
 Automated passive reconnaissance tool for website assessments.
 
-- **Language:** Python >= 3.13
-- **Dependency Management:** `uv` (preferred) or `pip`
-- **Core Libraries:** `beautifulsoup4`, `httpx`, `rich`, `dnspython`, `tldextract`, `requests`
+- **Language:** Python >= 3.13.
+- **Dependency Management:** `uv`.
 
 ## Development Workflow
 
 ### Commands
 
-- **Install Dependencies:** `uv sync` or `pip install -e .`
+- **Install Dependencies:** `uv sync`.
 - **Linting:** `ruff check .`
 - **Formatting:** `ruff format .` or `isort . && autopep8 --in-place --recursive .`
 - **Run Tool:** `uv run wpr`
@@ -24,7 +23,6 @@ Automated passive reconnaissance tool for website assessments.
 - **Type Hints:** Use PEP 484 type hints for all new functions and methods.
 - **Output:** Use the `rich` library for all terminal output to maintain consistent styling.
 - **Documentation:** Maintain existing Markdown documentation style and update `README.md` for new features.
-- **API Key Usage:** Provider classes should implement a `use_api_key()` method. If an API key is required, this method should return `True` and the API key should be passed to the provider's constructor. If no API key is used, it should return `False`.
 - **Data Description:** OSINTProviderData objects should include a `description_of_data_type` attribute to describe the nature of the data returned.
 
 ## Safety & Security

@@ -4,7 +4,6 @@ A new account must be created after consumed all credits
 See https://intelx.io/account?tab=developer
 """
 
-import json
 
 import httpx
 
@@ -23,8 +22,8 @@ class IntelX(OSINTProvider):
         request_headers = {"User-Agent": USER_AGENT, "x-key": self.api_key}
         payload = {"term": self.target_ip_or_domain, "buckets": [], "lookuplevel": 0, "maxresults": 100, "timeout": 0, "datefrom": "", "dateto": "", "sort": 4, "media": 0, "terminate": []}
         # First we must do a search
-        service_url = "https://2.intelx.io/intelligent/search"
-        response = httpx.post(service_url, json=json.dumps(payload), headers=request_headers, timeout=req_timeout)
+        service_url = "https://free.intelx.io/intelligent/search"
+        response = httpx.post(service_url, json=payload, headers=request_headers, timeout=req_timeout)
         response.raise_for_status()
         # Then get the result for the search
         search_id = str(response.json()["id"])
