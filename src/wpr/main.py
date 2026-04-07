@@ -149,11 +149,6 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     provider_data = handle_provider_call(provider, req_timeout)
     providers_data.append((provider, provider_data))
     ## SOFTWAREHERITAGE
-    for ip in ips_all:
-        provider = SoftwareHeritage(ip)
-        print_data_gathering_progress(provider)
-        provider_data = handle_provider_call(provider, req_timeout)
-        providers_data.append((provider, provider_data))
     provider = SoftwareHeritage(domain)
     print_data_gathering_progress(provider)
     provider_data = handle_provider_call(provider, req_timeout)
