@@ -2,11 +2,14 @@
 ############################################################
 # Script to perform the "Continuous Integration" validation
 ############################################################
+# Install UV
+curl -LsSf https://astral.sh/uv/install.sh | sh
 # Define the output file destination
 OUT=/tmp/out-$RANDOM-$RANDOM.tmp
 echo "[+] OUT set to file: $OUT."
 # Execute the script
-python wpr.py -d righettod.eu -s -n 8.8.8.8 -t 30 > $OUT
+cd src/wpr
+uv run main.py -d righettod.eu > $OUT
 # Validate the execution
 marker=$(grep -Fc "Reconnaissance finished" $OUT)
 echo "[+] Marker occurences found into the OUT file: $marker."
