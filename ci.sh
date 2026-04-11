@@ -2,8 +2,6 @@
 ############################################################
 # Script to perform the "Continuous Integration" validation
 ############################################################
-# Install UV
-curl -LsSf https://astral.sh/uv/install.sh | sh
 # Define the output file destination
 OUT=/tmp/out-$RANDOM-$RANDOM.tmp
 echo "[+] OUT set to file: $OUT."
@@ -13,6 +11,8 @@ uv run main.py -d righettod.eu > $OUT
 # Validate the execution
 marker=$(grep -Fc "Reconnaissance finished" $OUT)
 echo "[+] Marker occurences found into the OUT file: $marker."
+echo "[+] OUT file content:"
+cat $OUT
 rm $OUT
 if [ $marker -eq 0 ]
 then
