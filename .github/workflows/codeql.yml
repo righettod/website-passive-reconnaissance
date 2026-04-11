@@ -1,7 +1,7 @@
 name: "Audit python code with CodeQL"
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "v2" ]
     paths:
       - "**/*.py"    
   workflow_dispatch:
