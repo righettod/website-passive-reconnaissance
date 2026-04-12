@@ -77,10 +77,6 @@ wpr -d righettod.eu -a api_keys.ini
 wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ```
 
-# 📺 Demonstration
-
-TODO
-
 # 🧑‍💻 Migration to V2 & Development
 
 ## Choices
