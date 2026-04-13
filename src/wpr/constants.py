@@ -1,5 +1,5 @@
 """
-Contains constants and configuration items
+Contains constants and configuration items. All time units are in seconds.
 """
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 MOBILE_APP_STORE_COUNTRY_STORE_CODE = "LU"  # Luxembourg
