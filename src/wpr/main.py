@@ -97,12 +97,13 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
     ## GOOGLE DORK
+    api_key = api_keys.get("serp", "")
     for ip in ips_all:
-        provider = Google(ip)
+        provider = Google(ip, api_key=api_key)
         print_data_gathering_progress(provider)
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
-    provider = Google(domain)
+    provider = Google(domain, api_key=api_key)
     print_data_gathering_progress(provider)
     provider_data = handle_provider_call(provider, req_timeout)
     providers_data.append((provider, provider_data))

@@ -325,6 +325,18 @@ wheels = [
 ]
 
 [[package]]
+name = "serpapi"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/19/6af9f42d372d2d0012493155f5decf0a889f434e824a6b281ab2c8f88822/serpapi-1.0.2.tar.gz", hash = "sha256:06ff981129a1cb7c3706469a67f8d43e77ab295bcbdbfcb7c118d39e8efb0783", size = 16893, upload-time = "2026-03-18T14:29:16.448Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/21/6b33cea480c69992813fbd36bfdb622ead6e91c6ff259ee4b1143803769d/serpapi-1.0.2-py3-none-any.whl", hash = "sha256:4edb67318918c0ff460aae118d66f76ad83ab75fbf901a77a9722b0cfe6c70aa", size = 11768, upload-time = "2026-03-18T14:29:15.515Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -393,13 +405,14 @@ wheels = [
 
 [[package]]
 name = "wpr"
-version = "2.0.0a0"
+version = "2.0.0b1"
 source = { editable = "." }
 dependencies = [
     { name = "dnspython" },
     { name = "googlesearch-python" },
     { name = "httpx" },
     { name = "rich" },
+    { name = "serpapi" },
     { name = "tldextract" },
     { name = "whoisit" },
 ]
@@ -417,6 +430,7 @@ requires-dist = [
     { name = "googlesearch-python", specifier = ">=1.3.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "rich", specifier = ">=14.3.3" },
+    { name = "serpapi", specifier = ">=1.0.2" },
     { name = "tldextract", specifier = ">=5.3.1" },
     { name = "whoisit", specifier = ">=4.0.3" },
 ]

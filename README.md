@@ -47,6 +47,9 @@ viewdns=xxx
 dnsdumpster=xxx
 ;See https://docs.leakix.net/docs/api/authentication/
 leakix=xxx
+;See https://serpapi.com/
+;Used for Google Dorks in priority to direct search
+serp=xxx
 ```
 
 # 👩‍💻 Usage examples
