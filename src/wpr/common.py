@@ -161,6 +161,8 @@ def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False,
     else:
         msg = "\r✅ Data gathering finished."
     padding_length = TERMINAL_WIDTH - len(msg)
+    if padding_length <= 0:
+        padding_length = 1
     msg_padded = f"{msg}{' ':<{padding_length}}"
     print(msg_padded, end="", flush=True)
 
