@@ -47,6 +47,7 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     providers_data = []
     domain_without_tld = get_main_domain_without_tld(domain)
     # First extract IP addresses and aliases for the domain
+    print_data_gathering_progress(Dns(domain, name_server), fixed_msg=f"Extract IP addresses and aliases for the domain '{domain}'")
     records = perform_dns_lookup(domain, ["A", "AAAA"], name_server, req_timeout)
     ips_v4 = records.get("A", [])
     ips_v6 = records.get("AAAA", [])

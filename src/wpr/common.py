@@ -15,7 +15,7 @@ from dns.resolver import NXDOMAIN, NoAnswer, NoNameservers
 from rich.console import Console
 from rich.text import Text
 
-from wpr.constants import DEFAULT_CALL_TIMEOUT, HEADER_LENGTH
+from wpr.constants import DEFAULT_CALL_TIMEOUT, HEADER_LENGTH, TERMINAL_WIDTH
 
 
 # ----------------------
@@ -142,7 +142,7 @@ def get_main_domain_without_tld(domain: str) -> str:
     return domain_infos.domain
 
 
-def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False):
+def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False, fixed_msg: str | None = None):
     """
     Prints an inline progress indicator for the data gathering phase.
 
@@ -152,11 +152,17 @@ def print_data_gathering_progress(provider: OSINTProvider, is_end: bool = False)
     Args:
         provider: The provider currently being queried.
         is_end: When True, prints the final completion message instead of the in-progress one.
+        fixed_msg: Fixed message to print instead of a provider information.
     """
-    if not is_end:
-        print(f"\r📡 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain...{' ':<40}", end="", flush=True)
+    if fixed_msg is not None:
+        msg = f"\r💻 {fixed_msg}..."
+    elif not is_end:
+        msg = f"\r📡 Get data from '{provider.name}' provider for '{provider.target_ip_or_domain}' ip or domain..."
     else:
-        print(f"\r✅ Data gathering finished.{' ':<60}")
+        msg = "\r✅ Data gathering finished."
+    padding_length = TERMINAL_WIDTH - len(msg)
+    msg_padded = f"{msg}{' ':<{padding_length}}"
+    print(msg_padded, end="", flush=True)
 
 def print_header(messages: list[str]):
     """
