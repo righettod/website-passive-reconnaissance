@@ -2,11 +2,8 @@
 Contains functions and classes shared by all providers.
 """
 
-import tomllib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from importlib.metadata import PackageNotFoundError, version
-from pathlib import Path
 from typing import Dict, List, Optional
 
 import dns.resolver
@@ -15,6 +12,7 @@ from dns.resolver import NXDOMAIN, NoAnswer, NoNameservers
 from rich.console import Console
 from rich.text import Text
 
+from wpr.__about__ import __version__
 from wpr.constants import DEFAULT_CALL_TIMEOUT, HEADER_LENGTH, TERMINAL_WIDTH
 
 
@@ -214,21 +212,7 @@ def print_osint_data(data: tuple[OSINTProvider, OSINTProviderData]):
 def get_wpr_version() -> str:
     """
     Returns the current version of the wpr package.
-
-    Reads the version from the installed package metadata when available,
-    and falls back to parsing pyproject.toml directly for uninstalled runs.
-
     Returns:
         The version string (e.g. "2.0.0").
     """
-    wpr_version = "na"
-    try:
-        wpr_version = version("wpr")
-        if wpr_version is None or wpr_version.strip() == "":
-            raise PackageNotFoundError()
-    except PackageNotFoundError:
-        pyproject_file_location = str(Path(__file__).parent.parent.parent) + "/pyproject.toml"
-        with open(pyproject_file_location, "rb") as f:
-            project_metadata = tomllib.load(f)
-        wpr_version = project_metadata["project"]["version"] + " (read from project TOML file)"
-    return wpr_version
+    return __version__
