@@ -215,4 +215,7 @@ def get_wpr_version() -> str:
     Returns:
         The version string (e.g. "2.0.0").
     """
-    return __version__
+    version_value = __version__
+    if "b" in version_value.lower():
+        version_value = f"{version_value} (beta)"
+    return version_value
