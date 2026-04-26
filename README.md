@@ -24,7 +24,7 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 Use the following command:
 
 ```bash
-pip install --no-cache git+https://github.com/righettod/website-passive-reconnaissance.git@v2
+pip install --no-cache git+https://github.com/righettod/website-passive-reconnaissance.git
 ```
 
 # 🔑 API keys file
