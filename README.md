@@ -1,4 +1,4 @@
-![Test application running state](https://github.com/righettod/website-passive-reconnaissance/workflows/Test%20application%20running%20state/badge.svg) ![Audit python code with CodeQL](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml/badge.svg?branch=master)
+[![Test application running state](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml) [![Audit python code with CodeQL](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml)
 
 ![MadeWitVSCode](https://img.shields.io/static/v1?label=Made%20with&message=VisualStudio%20Code&color=blue&?style=for-the-badge&logo=visualstudio)  ![AutomatedWith](https://img.shields.io/static/v1?label=Automated%20with&message=GitHub%20Actions&color=blue&?style=for-the-badge&logo=github) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=GitHub%20CodeQL&color=blue&?style=for-the-badge&logo=github)
 
@@ -19,28 +19,12 @@ Also used to guide a reconnaissance phase by defining all steps (manual or autom
 | 3.13 | ✅ |
 | 3.14 | ✅ |
 
-# 💻 Installation of dependencies
+# 💻 Installation
 
 Use the following command:
 
 ```bash
-pip install -r requirements.txt
-```
-
-# 📡 Update of the "requirements.txt" file
-
-Use the following command to use [pipreqs](https://github.com/bndr/pipreqs):
-
-```bash
-pipreqs --force .
-```
-
-# 📡 Update TLD list caching of the module "tldextract"
-
-Use the following command from [here](https://github.com/john-kurkowski/tldextract#note-about-caching):
-
-```bash
-tldextract --update
+pip install --no-cache git+https://github.com/righettod/website-passive-reconnaissance.git@v2
 ```
 
 # 🔑 API keys file
@@ -53,72 +37,69 @@ API keys are expected to be provided within an **INI** file having the following
 [API_KEYS]
 ;See https://www.shodan.io/
 shodan=xxx
-;See https://www.hybrid-analysis.com
-hybrid-analysis=xxx
-;See https://www.virustotal.com
-virustotal=xxx
 ;See https://intelx.io/
 intelx=xxx
-;See https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7
-;See https://docs.microsoft.com/en-us/answers/questions/62385/please-help-me-to-find-the-process-to-get-ampampam.html
-azure-cognitive-services-bing-web-search=xxx
 ;See https://buckets.grayhatwarfare.com/docs/api/v1
 grayhatwarfare=xxx 
 ;See https://viewdns.info/api/
 viewdns=xxx
 ;See https://dnsdumpster.com/developer/
 dnsdumpster=xxx
+;See https://docs.leakix.net/docs/api/authentication/
+leakix=xxx
+;See https://serpapi.com/
+;Used for Google Dorks in priority to direct search
+serp=xxx
 ```
 
 # 👩‍💻 Usage examples
 
 ```bash
-$ python wpr.py --help
-usage: wpr.py [-h] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-p HTTP_PROXY] [-s]
+$ wpr --help                                                                                   
+usage: wpr [-h] [-v] -d DOMAIN_NAME [-a API_KEY_FILE] [-n NAME_SERVER] [-t REQUEST_TIMEOUT] [-m MOBILE_APP_STORE_COUNTRY_CODE]
 
-optional arguments:
-  -h, --help      Show this help message and exit
-  -a API_KEY_FILE Configuration INI file with all API keys 
-                  (ex: conf.ini).
-  -n NAME_SERVER  Name server to use for the DNS query 
-                  (ex: 8.8.8.8).
-  -p HTTP_PROXY   HTTP proxy to use for all HTTP call to differents services 
-                  (ex: http://88.198.50.103:9080).
-  -s              Save the result of the Google/Bing Dork searching for interesting files 
-                  to the file 'filetype_dork_result.txt'.
-  -t REQUEST_TIMEOUT  Delay in seconds allowed for a HTTP request to reply
-                      before to fall in timeout (ex: 20) - min is 5 seconds.
- -m MOBILE_APP_STORE_COUNTRY_CODE
-                      Country code to define in which store mobile app will be searched (ex: LU).                      
+options:
+  -h, --help            show this help message and exit
+  -v                    show program's version number and exit  
+  -a API_KEY_FILE       Configuration INI file with all API keys (ex: conf.ini).
+  -n NAME_SERVER        Name server to use for the DNS query (ex: 8.8.8.8), default to the system defined one.
+  -t REQUEST_TIMEOUT    Delay in seconds allowed for a HTTP request to reply before to fall in timeout (default to 240 seconds).
+  -m MOBILE_APP_STORE_COUNTRY_CODE
+                        Country code to define in which store mobile app will be searched (default to LU).
 
 required arguments:
-  -d DOMAIN_NAME  Domain to analyse (ex: righettod.eu).
-
-$ python wpr.py -d righettod.eu
-...
-
-$ python wpr.py -d righettod.eu -n 8.8.8.8
-...
-
-$ python wpr.py -d righettod.eu -n 8.8.8.8 -m FR
-...
-
-$ python wpr.py -d righettod.eu -n 8.8.8.8 -t 30
-...
-
-$ python wpr.py -d righettod.eu -a api_keys.ini
-...
-
-$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8
-...
-
-$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128
-...
-
-$ python wpr.py -d righettod.eu -a api_keys.ini -n 8.8.8.8 -p http://5.196.132.126:3128 -s
-...
+  -d DOMAIN_NAME        Domain to analyse (ex: righettod.eu).
 ```
 
-# 📺 Demonstration
+```bash
+wpr -d righettod.eu
+wpr -d righettod.eu -n 8.8.8.8
+wpr -d righettod.eu -n 8.8.8.8 -m FR
+wpr -d righettod.eu -n 8.8.8.8 -t 30
+wpr -d righettod.eu -a api_keys.ini
+wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
+```
 
-<https://user-images.githubusercontent.com/1573775/203140192-bf75a1a6-cddd-4f7c-8da9-5e931e6a3f21.mp4>
+# 🧑‍💻 Migration to V2 & Development
+
+## Choices
+
+* The migration was performed with the help of [Claude Code](https://claude.com/product/claude-code).
+* The following data providers were removed during the migration as data provided was not relevant (at least, it was a element noticed during the usage of the V1):
+  * **Virus Total**: <https://www.virustotal.com>
+  * **Hybrid Analysis**: <https://www.hybrid-analysis.com>
+  * **Azure Cognitive Services Bing Web Search**: <https://azure.microsoft.com/en-us/try/cognitive-services/?api=search-api-v7>
+* Support for web proxy as removed as it was never used  (at least, it was a element noticed during the usage of the V1), same for the option `-s`.
+
+## Project
+
+* It is configured to use [Visual Studio Code](https://code.visualstudio.com/) and a [workspace file](project.code-workspace) is provided.
+* It use [uv](https://docs.astral.sh/uv/) to manage [the python project](pyproject.toml).
+* OSINT data providers are now defined via a sub classe to allow to easlily add new ones.
+* [CLAUDE.md file](CLAUDE.md) and other [Claude code related files](.claude/) are used to define the coding and security guidelines.
+* Use the following command to run the project locally:
+
+```bash
+cd src/wpr
+uv run main.py -d righettod.eu
+```

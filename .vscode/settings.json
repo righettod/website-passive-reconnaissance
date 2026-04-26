@@ -1,0 +1,33 @@
+{
+  "python.analysis.typeCheckingMode": "standard",
+  "python.terminal.activateEnvironment": true,
+  "autopep8.importStrategy": "fromEnvironment",
+  "autopep8.args": [
+    "--max-line-length",
+    "1000"
+  ],
+  "[python]": {
+"editor.defaultFormatter": "charliermarsh.ruff",
+"editor.formatOnSave": true,
+"editor.codeActionsOnSave": {
+  "source.fixAll.ruff": "explicit",
+  "source.organizeImports.ruff": "explicit"
+}
+},
+"[json]": {
+"editor.defaultFormatter": "vscode.json-language-features",
+"editor.formatOnSave": true
+},
+"[jsonc]": {
+"editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+    "[markdown]": {
+      "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll.markdownlint": "always"
+      }
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+}

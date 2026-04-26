@@ -1,4 +1,4 @@
-name: Test application running state
+name: Test application running state and increase version
 on:
   push:
     branches: [ "master" ]
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 permissions: read-all
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -20,11 +20,31 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-      - name: Install dependencies
+      - name: Install UV
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
       - name: Execute the CI script
         run: |
           chmod +x ci.sh
           bash ci.sh
+  bump-version:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    name: Increase the version identifier
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv sync
+      - name: Bump patch version
+        run: uv run hatch version beta
+      - name: Commit and push bumped version
+        run: |
+          git config user.name "GHActionBot"
+          git config user.email "gha@github.com"
+          git commit -m "chore: bump version" src/wpr/__about__.py
+          git push
