@@ -111,6 +111,6 @@ uv run main.py -d righettod.eu
 
 Use this command:
 
-````bash
+```bash
 uv run hatch version beta
 ```
