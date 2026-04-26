@@ -1,9 +1,11 @@
-name: Test application running state and increase version
+name: Test application running state
 on:
   push:
     branches: [ "master" ]
     paths:
       - "**/*.py"    
+      - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch:
 permissions: read-all
 jobs:
@@ -28,23 +30,3 @@ jobs:
         run: |
           chmod +x ci.sh
           bash ci.sh
-  bump-version:
-    needs: validate
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    name: Increase the version identifier
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install UV
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv sync
-      - name: Bump patch version
-        run: uv run hatch version beta
-      - name: Commit and push bumped version
-        run: |
-          git config user.name "GHActionBot"
-          git config user.email "gha@github.com"
-          git commit -m "chore: bump version" src/wpr/__about__.py
-          git push

@@ -1,4 +1,4 @@
-[![Test application running state](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/pythonapp.yml) [![Audit python code with CodeQL](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml)
+[![Test application running state](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/validate.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/validate.yml) [![Audit python code with CodeQL](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml/badge.svg?branch=v2)](https://github.com/righettod/website-passive-reconnaissance/actions/workflows/codeql.yml)
 
 ![MadeWitVSCode](https://img.shields.io/static/v1?label=Made%20with&message=VisualStudio%20Code&color=blue&?style=for-the-badge&logo=visualstudio)  ![AutomatedWith](https://img.shields.io/static/v1?label=Automated%20with&message=GitHub%20Actions&color=blue&?style=for-the-badge&logo=github) ![AuditedWith](https://img.shields.io/static/v1?label=Audited%20with&message=GitHub%20CodeQL&color=blue&?style=for-the-badge&logo=github)
 
@@ -105,4 +105,12 @@ wpr -d righettod.eu -a api_keys.ini -n 8.8.8.8
 ```bash
 cd src/wpr
 uv run main.py -d righettod.eu
+```
+
+## Update project version
+
+Use this command:
+
+````bash
+uv run hatch version beta
 ```
