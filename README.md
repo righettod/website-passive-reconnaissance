@@ -5,7 +5,7 @@
 # 🎯 Objectives
 
 > [!IMPORTANT]
-> The tool was fully refactored to a v2 and is currently in BETA.
+> The tool was fully refactored to a v2 and is currently in BETA. See the current version [here](src/wpr/__about__.py#L1).
 
 Script to automate, when possible, the **[passive reconnaissance](https://www.codecademy.com/article/passive-active-reconnaissance)** performed on a website prior to an assessment (no direct hit on the target).
 

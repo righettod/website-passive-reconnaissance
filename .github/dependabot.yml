@@ -1,16 +1,10 @@
 version: 2
 updates:
-- package-ecosystem: pip
-  directory: "/"
+- package-ecosystem: uv
+  directory: /
   schedule:
-    interval: daily
-    time: "04:00"
-    timezone: Europe/Luxembourg
-  open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: gitpython
-    versions:
-    - 3.1.14
+    interval: weekly
+    time: '00:45'
 - package-ecosystem: github-actions
   directory: /
   schedule:
