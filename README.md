@@ -4,6 +4,9 @@
 
 # 🎯 Objectives
 
+> [!IMPORTANT]
+> The tool was fully refactored to a v2 and is currently in BETA.
+
 Script to automate, when possible, the **[passive reconnaissance](https://www.codecademy.com/article/passive-active-reconnaissance)** performed on a website prior to an assessment (no direct hit on the target).
 
 Also used to guide a reconnaissance phase by defining all steps (manual or automated) that must be mandatory performed.
