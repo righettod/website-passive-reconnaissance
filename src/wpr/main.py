@@ -14,6 +14,7 @@ from wpr.providers.github import GitHub
 from wpr.providers.google import Google
 from wpr.providers.grayhatwarfare import GrayHatWarfare
 from wpr.providers.hackertarget import HackerTarget
+from wpr.providers.hunter import Hunter
 from wpr.providers.intelx import IntelX
 from wpr.providers.leakix import Leakix
 from wpr.providers.mobileappstores import MobileAppStores
@@ -183,15 +184,10 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     ## LEAKIX
     api_key = api_keys.get("leakix", None)
     if api_key is not None:
-        provider = Leakix(api_key, "domain", domain)
+        provider = Leakix(api_key, domain)
         print_data_gathering_progress(provider)
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
-        for ip in ips_v4:
-            provider = Leakix(api_key, "host", ip)
-            print_data_gathering_progress(provider)
-            provider_data = handle_provider_call(provider, req_timeout)
-            providers_data.append((provider, provider_data))
     ## NAPALM FTP INDEXER
     for ip in ips_v4:
         provider = NapalmFtpIndexer(ip)
@@ -228,6 +224,13 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
     api_key = api_keys.get("dnsdumpster", None)
     if api_key is not None:
         provider = DnsDumpster(api_key, domain)
+        print_data_gathering_progress(provider)
+        provider_data = handle_provider_call(provider, req_timeout)
+        providers_data.append((provider, provider_data))
+    ## HUNTER
+    api_key = api_keys.get("hunter", None)
+    if api_key is not None:
+        provider = Hunter(api_key, domain)
         print_data_gathering_progress(provider)
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))

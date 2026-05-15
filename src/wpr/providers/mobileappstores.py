@@ -20,7 +20,6 @@ class MobileAppStores(OSINTProvider):
         information_lines = {"IOS": [], "ANDROID": []}
         request_headers = {"User-Agent": USER_AGENT}
         domain_infos = tldextract.extract(self.target_ip_or_domain)
-        base_domain = f"{domain_infos.domain}.{domain_infos.suffix}"
         base_domain_name = f"{domain_infos.domain}"
         # 1. iOS platform (App Store)
         try:
@@ -31,7 +30,7 @@ class MobileAppStores(OSINTProvider):
             results = response.json()
             found_ios = False
             for entry in results.get("results", []):
-                if "sellerUrl" in entry and base_domain.lower() in entry["sellerUrl"].lower():
+                if "bundleId" in entry and base_domain_name.lower() in entry["bundleId"].lower():
                     information_lines["IOS"].append(f"iOS app found with TrackName '{entry['trackName']}' and BundleId '{entry['bundleId']}'.")
                     found_ios = True
             if not found_ios:
@@ -45,8 +44,8 @@ class MobileAppStores(OSINTProvider):
             response = httpx.get(service_url, headers=request_headers, timeout=req_timeout)
             response.raise_for_status()
             results = response.text
-            android_bundle_regex = f"id=({domain_infos.suffix}\\.{domain_infos.domain}\\.[a-z0-9A-Z\\.\\-_]+)"
-            bundles = re.findall(android_bundle_regex, results)
+            android_bundle_regex = rf"apps\/details\?id=([a-z0-9_.\-]*{base_domain_name}[a-z0-9_.\-]*)"
+            bundles = re.findall(android_bundle_regex, results, re.IGNORECASE)
             if bundles:
                 for bundle in sorted(list(set(bundles))):
                     information_lines["ANDROID"].append(f"Android app found with PackageId '{bundle}'.")

@@ -53,6 +53,8 @@ leakix=xxx
 ;See https://serpapi.com/
 ;Used for Google Dorks in priority to direct search
 serp=xxx
+;See https://hunter.io/api
+hunter=xxx
 ```
 
 # 👩‍💻 Usage examples
