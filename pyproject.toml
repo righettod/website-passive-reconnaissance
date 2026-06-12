@@ -12,7 +12,7 @@ dependencies = [
     "rich>=15.0.0",
     "serpapi>=1.0.2",
     "tldextract>=5.3.1",
-    "whoisit>=4.0.3",
+    "whoisit>=4.0.4",
 ]
 
 [dependency-groups]
