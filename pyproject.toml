@@ -20,7 +20,7 @@ dev = [
     "autopep8>=2.3.2",
     "hatch>=1.17.0",
     "isort>=8.0.1",
-    "ruff>=0.15.18",
+    "ruff>=0.15.20",
 ]
 
 [tool.ruff]
