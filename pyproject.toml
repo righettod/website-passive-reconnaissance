@@ -18,7 +18,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "autopep8>=2.3.2",
-    "hatch>=1.17.0",
+    "hatch>=1.17.1",
     "isort>=8.0.1",
     "ruff>=0.15.20",
 ]
