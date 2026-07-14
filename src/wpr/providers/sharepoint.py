@@ -43,6 +43,6 @@ class SharePoint(OSINTProvider):
                     information_lines["INSTANCES"].append(f"[HTTP {status_code}] {instance_url}")
             except httpx.ConnectError:
                 pass
-        if len(information_lines) == 0:
+        if len(information_lines["INSTANCES"]) == 0:
             information_lines["INSTANCES"].append("No instance found.")
         return OSINTProviderData(information_lines=information_lines, description_of_data_type=data_type)
