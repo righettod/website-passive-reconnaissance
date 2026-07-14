@@ -22,6 +22,7 @@ from wpr.providers.napalmftpindexer import NapalmFtpIndexer
 from wpr.providers.pgpusers import PgpUsers
 from wpr.providers.proxynovacomb import ProxyNovaComb
 from wpr.providers.qualys_sslscan import QualysSslScan
+from wpr.providers.sharepoint import SharePoint
 from wpr.providers.shodan_cpe_cve import ShodanCpeCve
 from wpr.providers.shodan_ip import ShodanIP
 from wpr.providers.softwareheritage import SoftwareHeritage
@@ -234,6 +235,11 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
         print_data_gathering_progress(provider)
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
+    ## SHAREPOINT
+    provider = SharePoint(domain_without_tld)
+    print_data_gathering_progress(provider)
+    provider_data = handle_provider_call(provider, req_timeout)
+    providers_data.append((provider, provider_data))
     # Reset the progress indicator
     print_data_gathering_progress(provider, is_end=True)
     return providers_data
