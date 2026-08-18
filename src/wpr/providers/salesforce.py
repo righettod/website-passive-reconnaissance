@@ -1,24 +1,23 @@
 """
-Provider to verify if the domain have SharePoint instances on "sharepoint.com"
-via the existence of an instance on the subdomain "[domain-no-tld].sharepoint.com".
+Provider to verify if the domain have Salesforce instances on "salesforce.com"
+via the existence of an instance on the subdomain "[domain-no-tld].my.salesforce.com".
 """
-
 
 from wpr.common import OSINTProvider, OSINTProviderData, perform_dns_lookup
 from wpr.constants import DEFAULT_CALL_TIMEOUT
 
 
-class SharePoint(OSINTProvider):
+class Salesforce(OSINTProvider):
     def __init__(self, domain: str, name_server: str | None):
-        super().__init__(name="SharePoint", target_ip_or_domain=domain)
+        super().__init__(name="Salesforce", target_ip_or_domain=domain)
         self.name_server = name_server
 
     def call(self, req_timeout: int = DEFAULT_CALL_TIMEOUT) -> OSINTProviderData:
         suffix_prefix_collection = ["", "group", "dev", "test", "prod", "prd", "staging", "qa", "uat", "sandbox", "int"]
-        suffix_prefix_separator_collection = ["", "-"]
-        data_type = "SharePoint instances"
+        suffix_prefix_separator_collection = ["", "-", "."]
+        data_type = "Salesforce instances"
         information_lines = {"INSTANCES": []}
-        instance_domain_tpl = "%s.sharepoint.com"
+        instance_domain_tpl = "%s.my.salesforce.com"
         # Create the collection of subdomains to test
         subdomains = []
         for suffix_prefix in suffix_prefix_collection:

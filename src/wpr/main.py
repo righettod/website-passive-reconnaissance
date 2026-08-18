@@ -22,6 +22,7 @@ from wpr.providers.napalmftpindexer import NapalmFtpIndexer
 from wpr.providers.pgpusers import PgpUsers
 from wpr.providers.proxynovacomb import ProxyNovaComb
 from wpr.providers.qualys_sslscan import QualysSslScan
+from wpr.providers.salesforce import Salesforce
 from wpr.providers.sharepoint import SharePoint
 from wpr.providers.shodan_cpe_cve import ShodanCpeCve
 from wpr.providers.shodan_ip import ShodanIP
@@ -236,7 +237,12 @@ def gather_data(domain: str, name_server: str | None, req_timeout: int, api_keys
         provider_data = handle_provider_call(provider, req_timeout)
         providers_data.append((provider, provider_data))
     ## SHAREPOINT
-    provider = SharePoint(domain_without_tld)
+    provider = SharePoint(domain_without_tld, name_server)
+    print_data_gathering_progress(provider)
+    provider_data = handle_provider_call(provider, req_timeout)
+    providers_data.append((provider, provider_data))
+    ## SALESFORCE
+    provider = Salesforce(domain_without_tld, name_server)
     print_data_gathering_progress(provider)
     provider_data = handle_provider_call(provider, req_timeout)
     providers_data.append((provider, provider_data))
@@ -274,17 +280,17 @@ def main():
     print(f"DNS name server specified     : {default_name_server}")
     print(f"API keys loaded               : {len(api_keys_dict)}")
     print(f"Mobile app store country used : {default_mobile_app_store_country_store_code}")
-    print("")
+    print()
     print_header(["Gather data from providers"])
     start_time = time.time()
     providers_data = gather_data(args.domain_name, default_name_server, default_request_timeout, api_keys_dict, default_mobile_app_store_country_store_code)
     delay = round(time.time() - start_time, 2)
-    print("")
+    print()
     for provider_data in providers_data:
         print_osint_data(provider_data)
-        print("")
+        print()
     # Final processing
-    print("")
+    print()
     Console().print(f"✅ Reconnaissance finished in [bright_green][bold]{delay}[/bold][/bright_green] seconds.")
 
 
