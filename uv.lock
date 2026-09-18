@@ -854,14 +854,14 @@ wheels = [
 
 [[package]]
 name = "serpapi"
-version = "1.1.0"
+version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/22/32899238a9a6b318c574ff156a9ee723cc6436114d4b5e8de027dab664c5/serpapi-1.1.0.tar.gz", hash = "sha256:aeba7f824e21512deeb6eb8b993e99a153eb1f48bdbbd166ffe2d2e947bf622b", size = 19514, upload-time = "2026-08-14T11:10:58.735Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/10/04/0ddff4164197234a0f54f07a6407877b9379228b206e3cc1382b56f20e4f/serpapi-1.1.1.tar.gz", hash = "sha256:821c28a710599e14dfe0b7461e9615160671e6c6021e8b8ecefd59756dc3ede6", size = 75851, upload-time = "2026-09-08T13:35:06.607Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/27/87a91965837671b31da3a402541a2996e9041af05b2696c6ad9cd7938556/serpapi-1.1.0-py3-none-any.whl", hash = "sha256:203b3b59c24efd3dce08ae0f3cbf335eb3a130871597cb5d35da9dad90c12a03", size = 12559, upload-time = "2026-08-14T11:10:57.482Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/2a/1835cc02fa36503e62ba198d67c7745661dcbfc4c67ffc28a61964e758ac/serpapi-1.1.1-py3-none-any.whl", hash = "sha256:ce0a5267db4d4721e24eb3df801cee428165740b72aeff5e2861aa9e9982c901", size = 11289, upload-time = "2026-09-08T13:35:05.301Z" },
 ]
 
 [[package]]
